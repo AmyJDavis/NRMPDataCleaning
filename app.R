@@ -29,6 +29,7 @@ library(shiny)
 library(shinythemes)
 library(DT)
 library(leaflet)
+library(leaflegend)
 library(readxl)
 library(raster)
 library(tidyverse)
@@ -169,7 +170,7 @@ ui <- dashboardPage(
 # Define server logic required to draw a histogram
 server <- function(input, output,session) {
   
-  
+
   
   data <- reactive({
     req(input$ersdata)
@@ -246,10 +247,10 @@ server <- function(input, output,session) {
     table(NRMP_Master$COUNTY==NRMP_Master$County_from_GPS)
     
     ### AJD Check F01 error: Location in wrong state
-    NRMP_Master$F01=ifelse(NRMP_Master$State_on_record==NRMP_Master$State_from_GPS,0,1)
+    NRMP_Master$F01=ifelse(NRMP_Master$State_on_record==NRMP_Master$State_from_GPS&NRMP_Master$`LAT/LONRECORDED`=="YES",0,1)
     NRMP_Master[which(is.na(NRMP_Master$F01)),"F01"]=1
     ### AJD Check F02 error: Location in wrong county
-    NRMP_Master$F02=ifelse(NRMP_Master$COUNTY==NRMP_Master$County_from_GPS,0,1)
+    NRMP_Master$F02=ifelse(NRMP_Master$COUNTY==NRMP_Master$County_from_GPS&NRMP_Master$`LAT/LONRECORDED`=="YES",0,1)
     NRMP_Master[which(is.na(NRMP_Master$F02)),"F02"]=1
     
     
@@ -295,9 +296,9 @@ server <- function(input, output,session) {
     ######################################
     
     NRMP_Master$F04=ifelse(grepl("CAGE TRAP|FIREARMS|HANDCAUGHT/GATHERED|LEG/FOOT HOLD TRAP",NRMP_Master$METHOD)& NRMP_Master$COLLECTOR!="WS",1,0)
-    NRMP_Master$F05=ifelse(NRMP_Master$METHOD=="CAGE TRAP"& !grepl('DIED UNDER CARE|EUTHANIZED|FOUND DEAD|OTHER|RELEASED|NO FATE',NRMP_Master$FATE),1,
-                           ifelse(NRMP_Master$METHOD=="HANDCAUGHT/GATHERED"&!grepl('DIED UNDER CARE|EUTHANIZED|FOUND DEAD|RELEASED',NRMP_Master$FATE),1,
-                                  ifelse(NRMP_Master$METHOD=="LEG/FOOT HOLD TRAP"& !grepl('DIED UNDER CARE|EUTHANIZED|FOUND DEAD|OTHER|RELEASED|NO FATE',NRMP_Master$FATE),1,0)))
+    NRMP_Master$F05=ifelse(NRMP_Master$METHOD=="CAGE TRAP"& !grepl('DIED UNDER CARE|EUTHANIZED|FOUND DEAD|OTHER|RELEASED|NO FATE',NRMP_Master$FATE),1,0)
+    NRMP_Master$F06=ifelse(NRMP_Master$METHOD=="HANDCAUGHT/GATHERED"&!grepl('DIED UNDER CARE|EUTHANIZED|FOUND DEAD|OTHER|RELEASED|NO FATE',NRMP_Master$FATE),1,0)
+    NRMP_Master$F06b=ifelse(NRMP_Master$METHOD=="LEG/FOOT HOLD TRAP"& !grepl('DIED UNDER CARE|EUTHANIZED|FOUND DEAD|OTHER|RELEASED|NO FATE',NRMP_Master$FATE),1,0)
     NRMP_Master$F07=ifelse(NRMP_Master$METHOD=="FIREARMS (SHOT)"& NRMP_Master$FATE!="EUTHANIZED",1,0)
     NRMP_Master$F08=ifelse(NRMP_Master$METHOD=="NON-WS CARCASS COLLECTION"&NRMP_Master$FATE!="SAMPLED (NON-WS TAKE)",1,0)
     NRMP_Master$F09=ifelse(NRMP_Master$METHOD=="NON-WS EUTHANIZED"&NRMP_Master$FATE!="SAMPLED (NON-WS TAKE)",1,0)
@@ -448,6 +449,20 @@ server <- function(input, output,session) {
     latmin=min(df$LATITUDE[df$LATITUDE>0],na.rm = TRUE)
     latmax=max(df$LATITUDE[df$LATITUDE>0],na.rm = TRUE)
     
+    iconSet <- awesomeIconList(
+      Yes = makeAwesomeIcon(
+        icon = 'ion-arrow-up-b',
+        library = 'ion',
+        iconColor = 'white',
+        markerColor = 'black'
+      ),
+      No = makeAwesomeIcon(
+        icon = 'ion-arrow-down-b',
+        library = 'ion',
+        iconColor = 'white',
+        markerColor = 'red'
+      ))
+    
     l2<-leaflet(dfsp)%>%
       addTiles()%>%
       fitBounds(lng1 = lngmin, lng2 = lngmax, lat1 = latmin, lat2 = latmax) %>% 
@@ -462,7 +477,16 @@ server <- function(input, output,session) {
                           ),
                           iconColor = "white",
                           markerColor = loccols  # you can specify a color for the marker 
-                        ))
+                        ))%>%
+      addLegendAwesomeIcon(iconSet = iconSet,
+                           orientation = 'vertical',
+                           marker = TRUE,
+                           title = htmltools::tags$div(
+                             style = 'font-size: 20px;',
+                             'County-location match-up'),
+                           labelStyle = 'font-size: 16px;',
+                           position = 'topleft',
+                           group = 'Vertical Legend')
     
     addPolygons(map=l2,data = countiesx, 
                 color = "blue",
@@ -470,6 +494,8 @@ server <- function(input, output,session) {
                 weight  = 1,
                 layerId = ~COUNTYNS,
                 label = paste(countiesx$NAME, " County"))
+    
+    
     
     
   })
@@ -607,6 +633,8 @@ server <- function(input, output,session) {
 
 # Run the application 
 shinyApp(ui = ui, server = server)
+
+
 
 
 
