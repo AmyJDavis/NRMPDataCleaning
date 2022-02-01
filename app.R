@@ -101,10 +101,11 @@ ui <- dashboardPage(
     # in a page. It's not strictly necessary in this case, but
     # it's good practice.
     singleton(tags$head(tags$script(src = "message-handler.js"))),
-    
+    tags$h4(class="primary-subtitle", style='margin-top:8px;margin-left:15px;',"Use this file uploader to select the Excel file of the data you would like checked for errors.  The file needs to be in an Excel format (.xls or .xlsx) and should include the 94 columns from MIS output. The column names must also match MIS output. Note: This file uploader can only handle file sizes of 30MB or less.",align='left'),
     ## User inputs or from our study
     fileInput(inputId = "ersdata",label = "Select Data File",accept = c('xls','xlsx')),
-    downloadButton("download", "Download data with errors")
+    tags$h4(class="primary-subtitle", style='margin-top:8px;margin-left:15px;',"To download the data with errors, click the button below",align='left'),
+    downloadButton(outputId = "download",label =  "Download data with errors",style="color:black;font-size:18px")
   ),
   
   # Show output
@@ -170,7 +171,7 @@ ui <- dashboardPage(
 # Define server logic required to draw a histogram
 server <- function(input, output,session) {
   
-
+  
   
   data <- reactive({
     req(input$ersdata)
@@ -247,12 +248,12 @@ server <- function(input, output,session) {
     table(NRMP_Master$COUNTY==NRMP_Master$County_from_GPS)
     
     ### AJD Check F01 error: Location in wrong state
-    NRMP_Master$F01=ifelse(NRMP_Master$State_on_record==NRMP_Master$State_from_GPS&NRMP_Master$`LAT/LONRECORDED`=="YES",0,1)
-    NRMP_Master[which(is.na(NRMP_Master$F01)),"F01"]=1
+    NRMP_Master$F01=ifelse(NRMP_Master$State_on_record!=NRMP_Master$State_from_GPS&NRMP_Master$`LAT/LONRECORDED`=="YES",1,0)
     ### AJD Check F02 error: Location in wrong county
-    NRMP_Master$F02=ifelse(NRMP_Master$COUNTY==NRMP_Master$County_from_GPS&NRMP_Master$`LAT/LONRECORDED`=="YES",0,1)
-    NRMP_Master[which(is.na(NRMP_Master$F02)),"F02"]=1
-    
+    NRMP_Master$F02=ifelse(NRMP_Master$COUNTY!=NRMP_Master$County_from_GPS&NRMP_Master$`LAT/LONRECORDED`=="YES",1,0)
+
+    table(NRMP_Master$F01)
+    table(NRMP_Master$F02)
     
     ######################################
     ###
@@ -357,11 +358,14 @@ server <- function(input, output,session) {
     NRMP_Master$F21=ifelse(NRMP_Master$PM1SAMPLE=="YES"&!is.na(NRMP_Master$PM1SAMPLE)&NRMP_Master$DaysSinceCapture>366&NRMP_Master$AGERECORDED!="NO",ifelse(is.na(NRMP_Master$AGE),1,0),0)
     
     ### Error if RABIESBRAINTEST is "NOT RECORDED" after a year and a BRAINSTEMSAMPLE is "YES"
-    NRMP_Master$F22=ifelse(NRMP_Master$BRAINSTEMSAMPLE=="YES"&!is.na(NRMP_Master$BRAINSTEMSAMPLE)&NRMP_Master$DaysSinceCapture>366,ifelse((NRMP_Master$RABIESBRAINTEST=="NOT RECORDED"),1,0),0)
+    NRMP_Master$F22=ifelse(NRMP_Master$BRAINSTEMSAMPLE=="YES"&!is.na(NRMP_Master$BRAINSTEMSAMPLE)&NRMP_Master$DaysSinceCapture>29,ifelse((NRMP_Master$RABIESBRAINTEST=="NOT RECORDED"),1,0),0)
     
     ### Error if RABIESVNA_IUML is "NOT RECORDED" after a year and a BLOODSAMPLE is "YES"
     NRMP_Master$F23=ifelse(NRMP_Master$BLOODSAMPLE=="YES"&!is.na(NRMP_Master$BLOODSAMPLE)&NRMP_Master$DaysSinceCapture>366,ifelse(is.na(NRMP_Master$RABIESVNA_IUML),1,0),0)
     
+    ### Error if RABIESBRAINTEST is "POSITIVE" and RABIESVARIANT is "AWAITING VARIANT TYPING"
+    NRMP_Master$F23b=ifelse(NRMP_Master$RABIESBRAINRESULTS=="POSITIVE"&NRMP_Master$DaysSinceCapture>29&NRMP_Master$RABIESVARIANT=="AWAITING VARIANT TYPING",1,0)
+    NRMP_Master$F23b[is.na(NRMP_Master$F23b)]=0
     ### Error if OTHERSAMPLE is "YES" and OTHERSAMPLEEXPLAIN is blank
     NRMP_Master$F24=ifelse(NRMP_Master$OTHERSAMPLE=="YES"&!is.na(NRMP_Master$OTHERSAMPLE)&is.na(NRMP_Master$OTHERSAMPLEEXPLAIN),1,
                            ifelse(!is.na(NRMP_Master$OTHERSAMPLEEXPLAIN)&is.na(NRMP_Master$OTHERSAMPLE),1,0))
@@ -503,7 +507,7 @@ server <- function(input, output,session) {
   
   output$tablex <- renderDataTable({
     data<-data()
-    badlocs=data[which(data$F02==1),c("IDNUMBER","SPECIES","COUNTY","STATE","DATE","METHOD","LONGITUDE","LATITUDE")]
+    badlocs=data[which(data$F02==1),c("IDNUMBER","SPECIES","County_on_record","State_on_record","County_from_GPS","State_from_GPS","LONGITUDE","LATITUDE")]
     badlocs
   })
   
@@ -633,6 +637,7 @@ server <- function(input, output,session) {
 
 # Run the application 
 shinyApp(ui = ui, server = server)
+
 
 
 
