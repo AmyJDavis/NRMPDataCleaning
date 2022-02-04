@@ -180,6 +180,7 @@ server <- function(input, output,session) {
     #This is the file dumped from MIS
     ### New option for importing the data
     NRMP_Master <- read_excel(input$ersdata$datapath)
+    NRMP_Master$colnum=dim(NRMP_Master)[2]
     NRMP_Master$AmyID=1:dim(NRMP_Master)[1]
     NRMP_Master=NRMP_Master[!is.na(NRMP_Master$STATE),]
     
@@ -251,7 +252,7 @@ server <- function(input, output,session) {
     NRMP_Master$F01=ifelse(NRMP_Master$State_on_record!=NRMP_Master$State_from_GPS&NRMP_Master$`LAT/LONRECORDED`=="YES",1,0)
     ### AJD Check F02 error: Location in wrong county
     NRMP_Master$F02=ifelse(NRMP_Master$COUNTY!=NRMP_Master$County_from_GPS&NRMP_Master$`LAT/LONRECORDED`=="YES",1,0)
-
+    
     table(NRMP_Master$F01)
     table(NRMP_Master$F02)
     
@@ -628,7 +629,7 @@ server <- function(input, output,session) {
       paste(gsub("\\..*","",input$ersdata), "_withErrors.csv", sep="")
     },
     content = function(file) {
-      write.csv(data()[,c(1:94,which(names(data())%in%c("State_on_record","State_from_GPS","County_on_record","County_from_GPS","Errors")))], file,row.names = FALSE,na="")
+      write.csv(data()[,c(1:data()$colnum[1],which(names(data())%in%c("State_on_record","State_from_GPS","County_on_record","County_from_GPS","Errors")))], file,row.names = FALSE,na="")
     }
   )
   session$onSessionEnded(stopApp)
@@ -637,9 +638,6 @@ server <- function(input, output,session) {
 
 # Run the application 
 shinyApp(ui = ui, server = server)
-
-
-
 
 
 
