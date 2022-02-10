@@ -48,7 +48,9 @@ Below is a step by step guide on how to open and use the NRMP Data Cleaning App.
 ### Step 3: Copy the raw code from app.R
 #### Go to AmyJDavis/NRMPDataCleaning and click on app.R in the repository
 #### In the top right of the box containing the code, click "copy raw contents"
-#### Paste this into R
+#### Paste this into R and run the code
+#### NRMP Data Cleaning App should open
+
 
 
 
