@@ -151,6 +151,14 @@ ui <- dashboardPage(
                    #confusion matrix, model accuracy metrics
                    column(8,withSpinner(dataTableOutput(outputId="tablefate"))))
       ),
+      tabPanel("Serology Check",
+               box(width=12,title=span("Serology Information",style="color:blue;font-size:28px"),status="success",
+                   valueBoxOutput("serologyinfo")),
+               box(width=12,title=span("Distribution of VNA results by interpretation",style="color:blue;font-size:28px"),status="success",
+                   # varImp Plot
+                   column(6,plotOutput('VNAresult'))
+               )
+      ),
       tabPanel("Summary of Errors",
                box(width=12,title=span("Summary of errors in the data",style="color:blue;font-size:28px"),status="success",
                    # varImp Plot
@@ -228,7 +236,7 @@ server <- function(input, output,session) {
     NRMP_Co_ref <- spTransform(NRMP_locs, usc_crs)
     #Perform over()
     Co_per_NRMP_rec <- over(NRMP_Co_ref, usc)
-    ### AJD edit to get state iand county nfo
+    ### AJD edit to get state and county info
     Co_per_NRMP_rec$STATE=fips[match(substr(Co_per_NRMP_rec$GEOID, start = 1, stop = 2),fips$state_code),"state_name"]
     Co_per_NRMP_rec$COUNTY=fips[match(Co_per_NRMP_rec$GEOID,fips$FIPS),"county"]
     Co_per_NRMP_rec$COUNTY=toupper(stringr::str_remove(Co_per_NRMP_rec$COUNTY," County"))
@@ -335,7 +343,7 @@ server <- function(input, output,session) {
       ndat$F18=ifelse(ndat$diffdat<30&ndat$`PROCESSED<30DAYSAGO`=="NO",1,0)
       
       ### Error if an individual is called both a male and female at some point during its capture
-      ndat$F19=ifelse(all(ndat$SEX%in%c("MALE")&ndat$SEX%in%c("FEMALE")),1,0)
+      ndat$F19=ifelse(any(ndat$SEX%in%c("MALE"))&any(ndat$SEX%in%c("FEMALE")),1,0)
       
       ### Error if an individual as the same ID and captured on the same day
       ndat$F20[2]=ifelse(ndat$diffdat[2]==0,1,0)
@@ -345,7 +353,8 @@ server <- function(input, output,session) {
     }
     NRMP_Master=NRMP_Masterx[order(NRMP_Masterx$AmyID),]
     
-    
+    NRMP_Master$F19b=ifelse(NRMP_Master$LACTATION=="YES"&NRMP_Master$SEX!="FEMALE",1,0)
+    NRMP_Master$F19b[is.na(NRMP_Master$F19b)]=0
     
     ######################################
     ###
@@ -356,7 +365,8 @@ server <- function(input, output,session) {
     table(NRMP_Master$PM1SAMPLE)
     
     ### Error if age is not filled in after a year and a sample was collected
-    NRMP_Master$F21=ifelse(NRMP_Master$PM1SAMPLE=="YES"&!is.na(NRMP_Master$PM1SAMPLE)&NRMP_Master$DaysSinceCapture>366&NRMP_Master$AGERECORDED!="NO",ifelse(is.na(NRMP_Master$AGE),1,0),0)
+    NRMP_Master$F21=ifelse((NRMP_Master$PM1SAMPLE=="YES"|NRMP_Master$PM2SAMPLE=="YES"|NRMP_Master$K9SAMPLE=="YES"|NRMP_Master$JAWSAMPLE=="YES")&NRMP_Master$DaysSinceCapture>366&is.na(NRMP_Master$AGERECORDED)&is.na(NRMP_Master$AGE),1,0)
+    NRMP_Master$F21[is.na(NRMP_Master$F21)]=0
     
     ### Error if RABIESBRAINTEST is "NOT RECORDED" after a year and a BRAINSTEMSAMPLE is "YES"
     NRMP_Master$F22=ifelse(NRMP_Master$BRAINSTEMSAMPLE=="YES"&!is.na(NRMP_Master$BRAINSTEMSAMPLE)&NRMP_Master$DaysSinceCapture>29,ifelse((NRMP_Master$RABIESBRAINTEST=="NOT RECORDED"),1,0),0)
@@ -408,6 +418,14 @@ server <- function(input, output,session) {
     
     ### Error if BRAINSTEMTEST is "YES" and FATE is "RELEASED"
     NRMP_Master$F36=ifelse(NRMP_Master$BRAINSTEMSAMPLE=="YES"&!is.na(NRMP_Master$BRAINSTEMSAMPLE)&NRMP_Master$FATE=="RELEASED",1,0)
+    
+    ### Error make sure TARGETSPECIES is a target species for NRMP, or it was EUTHANIZED
+    targetsps=c("RACCOONS","FOXES, GRAY","FOXES, RED","COYOTES","SKUNKS, STRIPED","SKUNKS, SPOTTED")
+    NRMP_Master$F37=ifelse(NRMP_Master$FATE!="EUTHANIZED"&!(NRMP_Master$SPECIES%in%targetsps)&NRMP_Master$TARGETSPECIES=="YES",1,0)
+    
+    ### Error if the VNA interpret does not match the IUML information
+    NRMP_Master$VNAvals=as.numeric(gsub("<|>|=",replacement = "",NRMP_Master$RABIESVNA_IUML))
+    NRMP_Master$F38=ifelse(grepl("<",NRMP_Master$RABIESVNA_IUML)&NRMP_Master$RABIESVNAINTERPRET!="NEGATIVE",1,0)
     
     
     ######################################
@@ -591,7 +609,26 @@ server <- function(input, output,session) {
     fcts
   })
   
+  ####
+  #### VNA results info tab
+  ####
+  output$serologyinfo <- renderValueBox({
+    data<-data()
+    rab.err=length(which(!is.na(data$VNAvals)))
+    valueBox(
+      rab.err, "Number of records with serology results", icon = icon("chart-bar"),
+      color = "red"
+    )
+  })
   
+  output$VNAresult<-renderPlot({
+    data<-data()
+    nmax=max(data$VNAvals,na.rm=TRUE)
+    h1=hist(data$VNAvals[data$RABIESVNAINTERPRET=="NEGATIVE"],breaks=seq(0,nmax,0.05), col=rgb(1,0,0,0.5),xlab="VNA IUML",main="Histogram of VAN results")
+    h2=hist(data$VNAvals[data$RABIESVNAINTERPRET=="POSITIVE"],breaks=seq(0,nmax,0.05),col=rgb(0,0,1,0.5), add=TRUE)
+    legend("topright",legend = c("NEGATIVE","POSITIVE"),fill = c(rgb(1,0,0,0.5),rgb(0,0,1,0.5)))
+    
+  })
   
   ####
   ### Error tab info
