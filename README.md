@@ -58,6 +58,9 @@ The following file is your raw code to copy and paste into R to run the shiny ap
    install.packages("pwr")  
    install.packages("shinyWidgets")  
    install.packages("hablar")  
+   
+   **If pop up screen appears asking you to choose a CRAN mirror, select "USA (KS)" or state listed that is closest to your location.** 
+   
 ### Step 3: Check your working directory and update working directory if needed
 - Type in:
      getwd() 
