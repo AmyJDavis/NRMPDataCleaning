@@ -1,3 +1,8 @@
+---
+output:
+  word_document: default
+  html_document: default
+---
 # Guide to use NRMP Data Cleaning Shiny App
 
 Below is a step by step guide on how to open and use the NRMP Data Cleaning App. The App can be accessed by link, or by running the program through R. 
@@ -27,13 +32,16 @@ The following file is your raw code to copy and paste into R to run the shiny ap
 
 - If you have administrative privileges on your computer, do either of the following:
   - Windows Users - to install R
+  
     ###### 1. Open an internet browser and go to www.r-project.org.
     ###### 2. Click the "download R" link in the middle of the page under "Getting Started."
     ###### 3. Select a CRAN location (a mirror site) and click the corresponding link.  
     ###### 4. Click on the "Download R for Windows" link at the top of the page.  
     ###### 5. Click on the "install R for the first time" link at the top of the page.
-    ###### 6. Click "Download R for Windows" and save the executable file somewhere on your computer.  Run the .exe file and follow the installation instructions.      
-    ##### Mac Users - to install R
+    ###### 6. Click "Download R for Windows" and save the executable file somewhere on your computer.  Run the .exe file and follow the installation instructions.
+    
+ -  Mac Users - to install R
+    
     ###### 1. Open an internet browser and go to www.r-project.org.
     ###### 2. Click the "download R" link in the middle of the page under "Getting Started."
     ###### 3. Select a CRAN location (a mirror site) and click the corresponding link.
