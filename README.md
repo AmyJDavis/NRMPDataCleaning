@@ -1,8 +1,3 @@
----
-output:
-  word_document: default
-  html_document: default
----
 
 # Guide to use NRMP Data Cleaning Shiny App
 
@@ -53,7 +48,7 @@ The following file is your raw code to copy and paste into R to run the shiny ap
    7. Now that R is installed, you need to download and install RStudio.
     
 ##### To install RStudio
-   1. Use the link below to install RStudio Desktop
+   1. Use the link below to install RStudio Desktop  
    https://www.rstudio.com/products/rstudio/download/
    
 ### Step 2: Open RStudio and create a new project 
