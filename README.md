@@ -35,7 +35,8 @@ The following file is your raw code to copy and paste into R to run the shiny ap
    3. Select a CRAN location (a mirror site) and click the corresponding link. 
    4. Click on the "Download R for Windows" link at the top of the page. 
    5. Click on the "install R for the first time" link at the top of the page. 
-   6. Click "Download R for Windows" and save the executable file somewhere on your computer.  Run the .exe file and follow the installation instructions. 
+   6. Click "Download R for Windows" and save the executable file somewhere on your computer.  Run the .exe file and follow the installation instructions.
+   7. Now that R is installed, you need to download and install RStudio. 
    
 ##### Mac Users - to install R
     
