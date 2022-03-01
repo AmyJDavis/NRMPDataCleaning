@@ -100,7 +100,7 @@ Image 1. Home screen of NRMP MIS Data Cleaning App.
 
 The app provides several tabs to visually explore issues with the data.  It is not necessary to examine these.  You can proceed directly to Step 6 and download the data with error codes.  The codes for the errors are provided on the "Error Definitions" tab.  You can download the PDF of the errors codes on your computer to get descriptions on the errors.  If you are interested in visualizing your data and associated errors click through the following tabs. 
 
-1. Location Check tab: This tab provides a map of MIS samples, the points are color coded and are red if the county in the MIS record does not match the county where the latitude/longitude data show the location. There is also a table showing the samples with county location errors. Lastly, there is a summary box showing the number of location issues.
+1. Location Check tab: This tab provides a map of MIS samples, the points are color coded and are red if the county in the MIS record does not match the county where the latitude/longitude data show the location. The map in interactive so you can soom in and out as needed.  Your curser will show the county it is hovering over.  If you click on any point it will show the animal ID number, the species, and the county on the MIS record for that individual.  There is also a table showing the samples with county location errors. Lastly, there is a summary box showing the number of location issues.
 
 2. Rabies Check tab: This tab shows the number of samples that are awaiting results (either rabies results, titer results, or results from other samples) shown in yellow compared to the number of samples with test results provided, shown in purple. The summary boxes along the bottom show the number of results that are needed.  The errors for needing these samples to be filled in will only show after either 30 days (for rabies or rabies variant) or 1 year (for age or RVNA) has elapsed and no results are provided. 
 
@@ -114,4 +114,5 @@ The app provides several tabs to visually explore issues with the data.  It is n
 
 ### Step 6: Download the datafile with errors 
 
-Click the "Download data with errors" button to save the data file.
+Click the "Download data with errors" button to save the data file. This file will be downloaded as a .csv file.  The data will match the data you imported with a five additional columns.  The new columns are: State_on_record,	State_from_GPS,	County_on_record,	County_from_GPS, and	Errors.  The state and county information is for ease of comparison between the information from the GPS data (latitude/longitude) and the information in the MIS record.  The Error column will have a list of the errors associated with each line of code.  There may be no errors in which the value will be blank, or there may be one or many codes.  Codes are designated by the letter "F" then a number.  The codes can be looked up in the PDF that is found on the "Error Definitions" tab. Contact Kathy Nelson for any issues with error descriptions. 
+
