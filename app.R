@@ -132,7 +132,7 @@ ui <- dashboardPage(
       tabPanel("Rabies Check",
                box(width=12,title=span("Proportion of samples with rabies results",style="color:blue;font-size:28px"),status="success",
                    column(10,plotOutput('RabiesResult')),
-                   column(6,HTML("The error for rabies results not provided will only show if it has been more than a year since the sample was collected, allowing time for the laboratory results to come back. "))   
+                   column(6,HTML("The error for results not provided will only show if it has been more than 30 days for rabies or variant typing or more than a year for age and RVNA results since the sample was collected, allowing time for the laboratory results to come back. "))   
                ),
                fluidRow(
                  box(width=12,title=span("Summary of test result issues",style="color:blue;font-size:28px"),status="success",
@@ -154,7 +154,7 @@ ui <- dashboardPage(
       tabPanel("Serology Check",
                box(width=12,title=span("Serology Information",style="color:blue;font-size:28px"),status="success",
                    valueBoxOutput("serologyinfo")),
-               box(width=12,title=span("Distribution of VNA results by interpretation",style="color:blue;font-size:28px"),status="success",
+               box(width=12,title=span("Distribution of RVNA results by interpretation",style="color:blue;font-size:28px"),status="success",
                    # varImp Plot
                    column(6,plotOutput('VNAresult'))
                )
@@ -629,7 +629,7 @@ server <- function(input, output,session) {
   output$VNAresult<-renderPlot({
     data<-data()
     nmax=max(data$VNAvals,na.rm=TRUE)
-    h1=hist(data$VNAvals[data$RABIESVNAINTERPRET=="NEGATIVE"],breaks=seq(0,nmax,0.05), col=rgb(1,0,0,0.5),xlab="VNA IUML",main="Histogram of VAN results")
+    h1=hist(data$VNAvals[data$RABIESVNAINTERPRET=="NEGATIVE"],breaks=seq(0,nmax,0.05), col=rgb(1,0,0,0.5),xlab="RVNA IUML",main="Histogram of RVNA results")
     h2=hist(data$VNAvals[data$RABIESVNAINTERPRET=="POSITIVE"],breaks=seq(0,nmax,0.05),col=rgb(0,0,1,0.5), add=TRUE)
     legend("topright",legend = c("NEGATIVE","POSITIVE"),fill = c(rgb(1,0,0,0.5),rgb(0,0,1,0.5)))
     
