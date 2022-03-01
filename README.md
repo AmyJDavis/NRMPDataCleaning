@@ -98,7 +98,7 @@ Image 1. Home screen of NRMP MIS Data Cleaning App.
 
 ### Step 5: Select and add dataset to shiny app
 
-The app provides several tabs to visually explore issues with the data.  It is not necessary to examine these.  You can proceed directly to Step 6 and download the data with error codes.  The codes are provided on the "Error Definitions" tab.  You can download the PDF of the data errors on your computer to get descriptions on the errors.  If you are interested in visualizing your data and errors click through the following tabs. 
+The app provides several tabs to visually explore issues with the data.  It is not necessary to examine these.  You can proceed directly to Step 6 and download the data with error codes.  The codes for the errors are provided on the "Error Definitions" tab.  You can download the PDF of the errors codes on your computer to get descriptions on the errors.  If you are interested in visualizing your data and associated errors click through the following tabs. 
 
 1. Location Check tab: This tab provides a map of MIS samples, the points are color coded and are red if the county in the MIS record does not match the county where the latitude/longitude data show the location. There is also a table showing the samples with county location errors. Lastly, there is a summary box showing the number of location issues.
 
