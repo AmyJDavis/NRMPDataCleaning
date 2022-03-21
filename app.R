@@ -68,7 +68,7 @@ Fix_Comments <- read_excel("DataCheckingErrorCodes.xlsx")
 
 ### County information
 stfp <- 1:56
-stfp <- stfp[-c(2,15)]
+stfp <- stfp[-c(2,3,7,14,15,43,52)]
 countiesx <- tigris::counties(state = stfp, cb=TRUE)
 
 
