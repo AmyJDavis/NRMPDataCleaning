@@ -21,7 +21,9 @@ The following files need to be saved to a folder on your computer that will serv
 2. www - You will need to have a folder within your working direction named 'www'.  The following files need to be within the www folder.
 
    a)	DataCheckingErrors.xls
-   b)	DataCheckingErrors.pdf 
+   
+   b)	DataCheckingErrors.pdf
+   
    c)	USDA_bw_transparent.png 
 
 
@@ -62,8 +64,10 @@ The following files need to be saved to a folder on your computer that will serv
 ### Step 2: Open RStudio and create a new project 
 1. File --> New Project 
 2. Existing Directory 
+
    - choose the working directory you saved the files to previously 
-   – You do not need to open a new session (leave box at bottom left unchecked)
+
+   - You do not need to open a new session (leave box at bottom left unchecked)
 
 3. Create Project
 
