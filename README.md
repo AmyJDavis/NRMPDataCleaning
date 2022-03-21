@@ -1,3 +1,8 @@
+---
+output:
+  word_document: default
+  html_document: default
+---
 
 # Guide to use NRMP Data Cleaning Shiny App
 
@@ -15,7 +20,7 @@ The following files need to be saved to a folder on your computer that will serv
 1. app.R - This is the R code you will need to open in R via RStudio to run the shiny app (used in Step 4) 
 2. www - You will need to have a folder within your working direction named 'www'.  The following files need to be within the www folder.
 
-   a)	DataCheckingErrors.xls  
+   a)	DataCheckingErrors.xls
    b)	DataCheckingErrors.pdf 
    c)	USDA_bw_transparent.png 
 
