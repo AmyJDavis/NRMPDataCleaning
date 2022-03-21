@@ -64,7 +64,7 @@ options(shiny.maxRequestSize = 30*1024^2)
 ### 
 
 ### Read in Error code file
-Fix_Comments <- read_excel("DataCheckingErrorCodes.xlsx")
+Fix_Comments <- read_excel("www/DataCheckingErrorCodes.xlsx")
 
 ### County information
 stfp <- 1:56

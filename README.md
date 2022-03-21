@@ -10,19 +10,21 @@ Below is a step by step guide on how to open and use the NRMP Data Cleaning App.
 
 ## Files included
 
-The following files need to be added to a folder that will serve as a working directory  
-1.	DataCheckingErrors.xls  
-2.	DataCheckingErrors.pdf (needs to be in a folder titled "www" and that folder needs to be in your working directory)
-3.	USDA_bw_transparent.png (needs to be in a folder titled "www" and that folder needs to be in your working directory)
+The following files need to be saved to a folder on your computer that will serve as the working directory. 
 
-The following file is the R script you should save in the same working directory as specified above. Open this script in R via RStudio to run the shiny app (used in Step 4)  
-1.	app.R
+1. app.R - This is the R code you will need to open in R via RStudio to run the shiny app (used in Step 4) 
+2. www - You will need to have a folder within your working direction named 'www'.  The following files need to be within the www folder.
+
+   a)	DataCheckingErrors.xls  
+   b)	DataCheckingErrors.pdf 
+   c)	USDA_bw_transparent.png 
+
 
 ## Step by Step to Launch App From R
 
 ### Step 1: Download R and RStudio (if both are already installed proceed to Step 2)
 
-- Submit an IT ticket requesting to have R and R Studio (latest versions) installed 
+- Submit an IT ticket requesting to have R and R Studio (latest versions) installed. R can be installed without administrative privileges as long as it is saved under My Documents and not Programs.  
 
 #### -OR-
 
@@ -32,7 +34,7 @@ The following file is the R script you should save in the same working directory
   
    1. Open an internet browser and go to www.r-project.org. 
    2. Click the "download R" link in the middle of the page under "Getting Started." 
-   3. Select a CRAN location (a mirror site) and click the corresponding link. 
+   3. Select a CRAN location (a mirror site) and click the corresponding link. You should select at CRAN location that is closer to your location for speed of download.  
    4. Click on the "Download R for Windows" link at the top of the page. 
    5. Click on the "install R for the first time" link at the top of the page. 
    6. Click "Download R for Windows" and save the executable file somewhere on your computer.  Run the .exe file and follow the installation instructions.
@@ -42,7 +44,7 @@ The following file is the R script you should save in the same working directory
     
    1. Open an internet browser and go to www.r-project.org.
    2. Click the "download R" link in the middle of the page under "Getting Started."
-   3. Select a CRAN location (a mirror site) and click the corresponding link.
+   3. Select a CRAN location (a mirror site) and click the corresponding link. You should select at CRAN location that is closer to your location for speed of download.  
    4. Click on the "Download R for (Mac) OS X" link at the top of the page.
    5. Click on the file containing the latest version of R under "Files."
    6. Save the .pkg file, double-click it to open, and follow the installation instructions.
@@ -55,14 +57,16 @@ The following file is the R script you should save in the same working directory
 ### Step 2: Open RStudio and create a new project 
 1. File --> New Project 
 2. Existing Directory 
-   - choose folder that you saved included files to
+   - choose the working directory you saved the files to previously 
+   – You do not need to open a new session (leave box at bottom left unchecked)
+
 3. Create Project
-4. File --> New File --> R Script
 
 ### Step 3: Install neccessary packages
 
-Copy and paste the following text into your R script, then click "Run"
-
+Copy and paste the following text into your R console, then click 'enter'.  You may get several warnings about the instillation process, you can ignore these.  If you are prompted to 'Unpack data from source?' select "YES". 
+    
+    install.packages("Rtools")   
     install.packages("shiny")   
     install.packages("shinythemes")    
     install.packages("DT")  
@@ -89,7 +93,7 @@ Copy and paste the following text into your R script, then click "Run"
 
 ### Step 4: Run the app from R using the script: app.R
 
-Open the file "app.R" in RStudio, and press the "Run App" button on the top right of the script.
+Open the file "app.R" in RStudio. You can do this be selecting File -> Open File -> then select "app.R" or within R studio on the bottom right of the screen you should see a tab named "Files", select that tab to see all of the files within your working directory, click on the name of the "app.R" file to open the script. Once app.R is open it should appear in the top left quadrant of the R studio screen. Press the "Run App" button on the top right of the script to run the app.  This will open the app within your web browser window.
 
 #### NRMP Data Cleaning App should open in your web browser
 
@@ -97,6 +101,7 @@ Open the file "app.R" in RStudio, and press the "Run App" button on the top righ
 Image 1. Home screen of NRMP MIS Data Cleaning App.
 
 ### Step 5: Select and add dataset to shiny app
+Click the "Browse" button under the "Select Data File" on the left panel to select the Excel spreadsheet of MIS data you would like to run the data checker on. Once the data are uploaded, the data checking will occur, this may take a few moments depending on the file size you upload.  The current limit of the app is 30MB. 
 
 The app provides several tabs to visually explore issues with the data.  It is not necessary to examine these.  You can proceed directly to Step 6 and download the data with error codes.  The codes for the errors are provided on the "Error Definitions" tab.  You can download the PDF of the errors codes on your computer to get descriptions on the errors.  If you are interested in visualizing your data and associated errors click through the following tabs. 
 
@@ -114,5 +119,5 @@ The app provides several tabs to visually explore issues with the data.  It is n
 
 ### Step 6: Download the datafile with errors 
 
-Click the "Download data with errors" button to save the data file. This file will be downloaded as a .csv file.  The data will match the data you imported with a five additional columns.  The new columns are: State_on_record,	State_from_GPS,	County_on_record,	County_from_GPS, and	Errors.  The state and county information is for ease of comparison between the information from the GPS data (latitude/longitude) and the information in the MIS record.  The Error column will have a list of the errors associated with each line of code.  There may be no errors in which the value will be blank, or there may be one or many codes.  Codes are designated by the letter "F" then a number.  The codes can be looked up in the PDF that is found on the "Error Definitions" tab. Contact Kathy Nelson for any issues with error descriptions. 
+Click the "Download data with errors" button to save the data file. This file will be downloaded as a .csv file and will have the same name as the file you uploaded but with "with_errors" at the end of the name.  The file will be saved in the working directory you are using for this app. The data will match the data you imported with a five additional columns.  The new columns are: State_on_record,	State_from_GPS,	County_on_record,	County_from_GPS, and	Errors.  The state and county information is for ease of comparison between the information from the GPS data (latitude/longitude) and the information in the MIS record.  The Error column will have a list of the errors associated with each line of code.  There may be no errors in which the value will be blank, or there may be one or many codes.  Codes are designated by the letter "F" then a number.  The codes can be looked up in the PDF that is found on the "Error Definitions" tab. Contact Kathy Nelson for any issues with error descriptions. 
 
