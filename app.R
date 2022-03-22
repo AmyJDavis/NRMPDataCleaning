@@ -60,7 +60,7 @@ get_popup_content <- function(dfsp) {
 
 # Options for Spinner
 options(spinner.color="#0275D8", spinner.color.background="#ffffff", spinner.size=2)
-options(shiny.maxRequestSize = 30*1024^2)
+options(shiny.maxRequestSize = 35*1024^2)
 ### 
 
 ### Read in Error code file
