@@ -60,7 +60,7 @@ get_popup_content <- function(dfsp) {
 
 # Options for Spinner
 options(spinner.color="#0275D8", spinner.color.background="#ffffff", spinner.size=2)
-options(shiny.maxRequestSize = 35*1024^2)
+options(shiny.maxRequestSize = 30*1024^2)
 ### 
 
 ### Read in Error code file
@@ -304,8 +304,7 @@ server <- function(input, output,session) {
     ### AJD Check for Method/Fate Errors 
     ###
     ######################################
-    
-    NRMP_Master$F04=ifelse(grepl("CAGE TRAP|FIREARMS|HANDCAUGHT/GATHERED|LEG/FOOT HOLD TRAP",NRMP_Master$METHOD)& NRMP_Master$COLLECTOR!="WS",1,0)
+    NRMP_Master$F04=ifelse(grepl("CAGE TRAP|FIREARMS|HANDCAUGHT/GATHERED|LEG/FOOT HOLD TRAP|ROAD KILL|WS INCIDENTAL TAKE ",NRMP_Master$METHOD)& NRMP_Master$COLLECTOR!="WS",1,0)
     NRMP_Master$F05=ifelse(NRMP_Master$METHOD=="CAGE TRAP"& !grepl('DIED UNDER CARE|EUTHANIZED|FOUND DEAD|OTHER|RELEASED|NO FATE',NRMP_Master$FATE),1,0)
     NRMP_Master$F06=ifelse(NRMP_Master$METHOD=="HANDCAUGHT/GATHERED"&!grepl('DIED UNDER CARE|EUTHANIZED|FOUND DEAD|OTHER|RELEASED|NO FATE',NRMP_Master$FATE),1,0)
     NRMP_Master$F06b=ifelse(NRMP_Master$METHOD=="LEG/FOOT HOLD TRAP"& !grepl('DIED UNDER CARE|EUTHANIZED|FOUND DEAD|OTHER|RELEASED|NO FATE',NRMP_Master$FATE),1,0)
@@ -403,18 +402,8 @@ server <- function(input, output,session) {
     ### Error if MISTARGET is "INTENTIONAL and RECAPTURE is blank
     NRMP_Master$F31=ifelse((NRMP_Master$METHOD=="CAGE TRAP"|NRMP_Master$METHOD=="HANDCAUGHT/GATHERED"|NRMP_Master$METHOD=="LEG/FOOT HOLD TRAP")&NRMP_Master$MISTARGET=="INTENTIONAL"&!is.na(NRMP_Master$MISTARGET)&is.na(NRMP_Master$RECAPTURE),1,0)
     
-    ### Error if DENSITYSTUDY is "NO" and DENSITYID has a value
-    NRMP_Master$F32=ifelse(NRMP_Master$DENSITYSTUDY=="NO"&!is.na(NRMP_Master$DENSITYSTUDY)&!is.na(NRMP_Master$DENSITYID),1,0)
-    
-    ### Error if OTHERCOLLECTOR is provided but COLLECTOR is not "OTHER"
-    NRMP_Master$F33=ifelse(!is.na(NRMP_Master$OTHERCOLLECTOR)&(NRMP_Master$COLLECTOR!="OTHER"),1,0)
-    
     ### Error if the COLLETOR is not "WS" and METHOD or FATE are inappropriate
-    NRMP_Master$F34=ifelse(NRMP_Master$COLLECTOR!="WS"&(NRMP_Master$METHOD=="CAGE TRAP"|NRMP_Master$METHOD== "FIREARMS (SHOT)"|NRMP_Master$METHOD== "HANDCAUGHT/GATHERED"|NRMP_Master$METHOD=="LEG/FOOT HOLD TRAP"|NRMP_Master$METHOD=="ROAD KILL"|NRMP_Master$METHOD=="WS INCIDENTAL TAKE"),1,0)
-    NRMP_Master$F34=ifelse(NRMP_Master$COLLECTOR!="WS"&(NRMP_Master$FATE=="DIED UNDER CARE"|NRMP_Master$FATE=="EUTHANIZED"|NRMP_Master$FATE=="FOUND DEAD"|NRMP_Master$FATE=="NO FATE"|NRMP_Master$FATE=="OTHER"|NRMP_Master$FATE=="RELEASED"|NRMP_Master$FATE=="SAMPLED (WS TAKE)"),1,NRMP_Master$F34)
-    
-    ### Error if COLLECTOR is "OTHER" and the OTHERCOLLECTOR is blank
-    NRMP_Master$F35=ifelse(NRMP_Master$COLLECTOR=="OTHER"&!is.na(NRMP_Master$COLLECTOR)&is.na(NRMP_Master$OTHERCOLLECTOR),1,0)
+    NRMP_Master$F34=ifelse(NRMP_Master$COLLECTOR!="WS"&(NRMP_Master$FATE=="DIED UNDER CARE"|NRMP_Master$FATE=="EUTHANIZED"|NRMP_Master$FATE=="FOUND DEAD"|NRMP_Master$FATE=="NO FATE"|NRMP_Master$FATE=="OTHER"|NRMP_Master$FATE=="RELEASED"|NRMP_Master$FATE=="SAMPLED (WS TAKE)"),1,0)
     
     ### Error if BRAINSTEMTEST is "YES" and FATE is "RELEASED"
     NRMP_Master$F36=ifelse(NRMP_Master$BRAINSTEMSAMPLE=="YES"&!is.na(NRMP_Master$BRAINSTEMSAMPLE)&NRMP_Master$FATE=="RELEASED",1,0)
@@ -432,6 +421,23 @@ server <- function(input, output,session) {
     NRMP_Master$VNAvals=as.numeric(gsub("<|>|=",replacement = "",NRMP_Master$RABIESVNA_IUML))
     NRMP_Master$F38=ifelse(grepl("<",NRMP_Master$RABIESVNA_IUML)&NRMP_Master$RABIESVNAINTERPRET!="NEGATIVE",1,0)
     
+    ### Error if ACTIVITY and ORVNAIVE don't match
+    NRMP_Master$F39=ifelse(NRMP_Master$ACTIVITY=="TRAPPING (ORV NAIVE)"&NRMP_Master$ORVNAIVE!="YES",1,0)
+    NRMP_Master$F39=ifelse(NRMP_Master$ACTIVITY=="TRAPPING (ORV POST-BAIT)"&NRMP_Master$ORVNAIVE!="NO",1,NRMP_Master$F39)
+    
+    ### Error for negative days since last orv
+    NRMP_Master$F40=ifelse(NRMP_Master$DAYSPOSTBAIT<0,1,0)
+    NRMP_Master$F40[is.na(NRMP_Master$F40)]=0
+    
+    ### Error for ORVNAIVE and bait type match
+    NRMP_Master$F41=ifelse(NRMP_Master$ORVNAIVE=="YES"&NRMP_Master$ORVBAITTYPE!="NONE (NAIVE)",1,0)
+    NRMP_Master$F41=ifelse(NRMP_Master$ORVNAIVE=="NO"&(is.na(NRMP_Master$ORVBAITTYPE)|NRMP_Master$ORVBAITTYPE=="NONE (NAIVE)"),1,NRMP_Master$F41)
+    NRMP_Master$F41=ifelse((!is.na(NRMP_Master$ORVBAITTYPE)|NRMP_Master$ORVBAITTYPE!="NONE (NAIVE)")&is.na(NRMP_Master$ORVNAIVE),1,NRMP_Master$F41)
+    NRMP_Master$F41[is.na(NRMP_Master$F41)]=0
+    
+    ### Error for ORVNAIVE is no DATELASTORV must have a value
+    NRMP_Master$F42=ifelse(NRMP_Master$ORVNAIVE=="NO"&is.na(NRMP_Master$DATELASTORV),1,0)
+    NRMP_Master$F42[is.na(NRMP_Master$F42)]=0
     
     ######################################
     ###
