@@ -169,7 +169,7 @@ ui <- dashboardPage(
                    column(6,plotOutput('VNAresult'))
                )
       ),
-     
+      
       tabPanel("Error Definitions",
                tags$iframe(style="height:1000px; width:100%; scrolling=yes", 
                            src="DataCheckingErrorCodes.pdf")),
