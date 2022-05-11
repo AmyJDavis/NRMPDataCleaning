@@ -116,8 +116,8 @@ ui <- dashboardPage(
                    # 
                    column(11,p("Welcome to the NRMP MIS data cleaning app.  This app was developed to help check for errors in data entry.  Historically, this data checking was done by hand by NRMP staff. By automating this task, now rabies biologists as well as NRMP staff can check for data errors in their own data. ",style="font-size:130%;"),
                           p("To use this app you will use the file uploader on the left panel to select the file you would like to check for errors.  The file needs to be in an Excel format (.xls or .xlsx) and should include the 94 columns from MIS output. The column names must also match MIS output. Please note, this file uploader can only handle file sizes of 30MB or less. Larger files will take longer to check. Once your data has been checked, you can download to your computer your data file with error codes.  A PDF of the error codes and their descriptions can be found on the “Error definitions-PDF” tab. You should download this PDF as a reference for understand the errors.  If you have any questions about the definition of an error code, please contact Kathy Nelson (Kathleen.M.Nelson@usda.gov). ",style="font-size:130%;"), 
-                          p("By uploading the data and then downloading the data with errors, you can be done with this app.  However, we have provided additional tabs in this app to help visualize and understand some of the errors in your data.  The following is a description of the tabs in this app and how to use them.",style="font-size:130%;"),
-                          
+                          p("By uploading the data and then downloading the data with errors, you can be done with this app.  However, we have provided additional tabs in this app to help visualize and understand some of the errors in your data.  The following is a description of the tabs in this app and how to use them.",style="font-size:130%;")),
+                   column(11,        
                           p("     •	",strong("Summary of Errors")," – This is a tab that summarizes the errors in your dataset.  There is a bar chart that shows the error codes and the number of records with those errors.  Then there is a table that tells you the number of error and provides a description of the errors.  This is a good reference to see what common issues are showing up in your data.",style="font-size:130%;"),
                           p("     •	",strong("Location check")," – This tab checks the latitude and longitude information against the state and county information. The top shows a dashboard indicating the number of records that have a state/location mismatch and the number that have a county/location mismatch.  There is also an interactive map that lets you visually see the records that have a county/location mismatch (shown as red points).  As you scroll your curser over the map it will tell you which county your curser is in.  If you click on a point, an info box will pop up that tells you the record ID number, the species of that record, and the county that record says it is in. Below the map is a table of just the records that have a state or county mismatch with the location. Warning: If you are uploading a very large file, you may not want to try and visualize the map as it will take a long time to load. ",style="font-size:130%;"),
                           p("     •	",strong("Method-Fate check")," – This tab shows a pivot-type table of all of the Method-Fate combinations where there was a Method-Fate error.  There are some Method-Fate combinations that are not allowed (see the Method/Fate Scenarios-PDF for details). By visualizing the data in this table you can see the combinations that are not allowed that are in your data. ",style="font-size:130%;"),
@@ -182,7 +182,7 @@ ui <- dashboardPage(
       tabPanel("Method-Fate Check",icon = icon("bar-chart-o"),
                box(width=12,title=span("How to interpret this table",style="color:green;font-size:28px"),status="success",
                    # 
-                   column(11,p("This table shows all Method-Fate combinations in your dataset that involved an error (N06-N13).  See the Method/Fate Scenarios-PDF for more details.",style="font-size:130%;")
+                   column(11,p("This table shows all Method-Fate combinations in your dataset that involved an error (N06-N13).  See the Method/Fate Scenarios-PDF for more details. If no table displays then you don't have any Method-Fate issues in your dataset.",style="font-size:130%;")
                    )
                ),
                box(width=12,title=span("METHOD-FATE combinations",style="color:blue;font-size:28px"),status="success",
@@ -205,7 +205,7 @@ ui <- dashboardPage(
       ),
       tabPanel("Target Species Check",icon = icon("bar-chart-o"),
                box(width=12,title=span("NRMP target species and MIS target",style="color:blue;font-size:28px"),status="success",
-                   column(11,p("This table shows the species and if the animal was designated as a target species.  Only data with errors are shown (N20). See NRMP Target Species and MIS Target.pdf for more detail.",style="font-size:130%;")),
+                   column(11,p("This table shows the species and if the animal was designated as a target species.  Only data with errors are shown (N20). See NRMP Target Species and MIS Target.pdf for more detail. If no table displays there are no Target Species issues in your dataset.",style="font-size:130%;")),
                    
                    column(8,withSpinner(dataTableOutput(outputId="targetsps"))))
       ),
@@ -624,7 +624,7 @@ server <- function(input, output,session) {
   
   
   ####
-  ### Rabies results tab info
+  ### Sample Results tab info
   ####
   output$RabiesResult<-renderPlot({
     data<-data()
@@ -666,13 +666,8 @@ server <- function(input, output,session) {
   
   
   ####
-  ### Fate tab info
+  ### Method-fate tab info
   ####
-  
-  output$FateResult<-renderPlot({
-    data<-data()
-    pie(table(data$FATE),col=viridis(5),cex=1.3)
-  })
   
   output$tablefate <- renderDataTable({
     data<-data()
