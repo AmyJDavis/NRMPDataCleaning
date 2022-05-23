@@ -31,12 +31,11 @@ library(DT)
 library(leaflet)
 library(leaflegend)
 library(readxl)
-library(raster)
+#library(raster)
 library(tidyverse)
 library(tigris)
 library(shinycssloaders)
 library(htmltools)
-library(rgdal)
 library(reshape2)
 library(viridis)
 library(data.table)
@@ -48,14 +47,15 @@ library(shinydashboard)
 library(pwr)
 library(shinyWidgets)
 library(hablar)
+library(sf)
 
 
 get_popup_content <- function(dfsp) {
   paste0(
-    "<b>ID: ", dfsp@data$IDNUMBER, "</b>",
+    "<b>ID: ", dfsp$IDNUMBER, "</b>",
     "<br>",
-    "<br>Species: ", dfsp@data$SPECIES,
-    "<br>County in record: ", dfsp@data$COUNTY  )
+    "<br>Species: ", dfsp$SPECIES,
+    "<br>County in record: ", dfsp$COUNTY  )
 }
 
 # Options for Spinner
@@ -266,89 +266,28 @@ server <- function(input, output,session) {
     fips <- fips_codes
     fips$FIPS=paste(fips$state_code,fips$county_code,sep="")
     NRMP_Master$State_on_record=toupper(fips[match(NRMP_Master$STATE,fips$state),"state_name"])
+    NRMP_Master$lat=ifelse(is.na(NRMP_Master$LATITUDE),0,NRMP_Master$LATITUDE)
+    NRMP_Master$lon=ifelse(is.na(NRMP_Master$LONGITUDE),0,NRMP_Master$LONGITUDE)
     
-    # AJD edit to get county polygon data frame information
+    # To get county polygon data frame information
     uscd=tigris::counties(state=stfp,cb = TRUE)
-    uscsf=uscd$geometry
-    uscs=as(uscsf,"Spatial")
-    # Extract polygon ID's
-    pid <- sapply(slot(uscs, "polygons"), function(x) slot(x, "ID"))
-    # Create dataframe with correct rownames
-    p.df <- data.frame( GEOID=uscd$GEOID, row.names = pid)
-    usc=SpatialPolygonsDataFrame(uscs,data = p.df)
-    # Define coordinate system for NRMP data and pull coordinate system from tigris counties file
-    usc_crs <- proj4string(usc)
-    NRMP_crs <- CRS("+proj=longlat +ellps=WGS84 +datum=WGS84")
-    # Get NRMP and usc ready for over()
-    NRMP_Master$LONGITUDE[is.na(NRMP_Master$LONGITUDE)] <- 0
-    NRMP_Master$LATITUDE[is.na(NRMP_Master$LATITUDE)] <- 0
     
-    NRMP_locs=NRMP_Master[,c("IDNUMBER","LONGITUDE","LATITUDE")]
-    coordinates(NRMP_locs) <- c('LONGITUDE', 'LATITUDE')
-    proj4string(NRMP_locs) <- usc_crs
-    NRMP_Co_ref <- spTransform(NRMP_locs, usc_crs)
-    # Perform over()
-    Co_per_NRMP_rec <- over(NRMP_Co_ref, usc)
-    # AJD edit to get state and county info
-    Co_per_NRMP_rec$STATE=fips[match(substr(Co_per_NRMP_rec$GEOID, start = 1, stop = 2),fips$state_code),"state_name"]
-    Co_per_NRMP_rec$COUNTY=fips[match(Co_per_NRMP_rec$GEOID,fips$FIPS),"county"]
-    Co_per_NRMP_rec$COUNTY=toupper(stringr::str_remove(Co_per_NRMP_rec$COUNTY," County"))
+    pnts_sf <- st_as_sf(NRMP_Master, coords = c('lon', 'lat'), crs = st_crs(uscd))
     
+    pnts <- pnts_sf %>% mutate(
+      intersection = as.integer(st_intersects(geometry, uscd)),
+      County_on_record=COUNTY,
+      County_from_GPS = gsub('[[:punct:] ]+',' ',toupper(if_else(is.na(intersection), '', uscd$NAME[intersection]))),
+      State_from_GPS = toupper(if_else(is.na(intersection), '', uscd$STATE_NAME[intersection])),
+    ) 
     
-    # Create Check County and State columns
-    NRMP_Master$State_from_GPS <- toupper(Co_per_NRMP_rec$STATE)
-    NRMP_Master$State_from_GPS <- gsub('[[:punct:] ]+',' ',NRMP_Master$State_from_GPS)
+    NRMP_Master=pnts %>% st_drop_geometry()
     
-    NRMP_Master$County_on_record <- NRMP_Master$COUNTY
-    NRMP_Master$County_from_GPS <- Co_per_NRMP_rec$COUNTY
-    NRMP_Master$County_from_GPS <- gsub('[[:punct:] ]+',' ',NRMP_Master$County_from_GPS)
-    
-    
-    # AJD Getting counts of correct state and county locations
-    table(NRMP_Master$State_on_record==NRMP_Master$State_from_GPS)
-    table(NRMP_Master$COUNTY==NRMP_Master$County_from_GPS)
-    
-    # AJD Check N01 error: Location in wrong state
     NRMP_Master$N01=ifelse(NRMP_Master$State_on_record!=NRMP_Master$State_from_GPS&NRMP_Master$`LAT/LONRECORDED`=="YES",1,0)
-    # AJD Check N02 error: Location in wrong county
     NRMP_Master$N02=ifelse(NRMP_Master$COUNTY!=NRMP_Master$County_from_GPS&NRMP_Master$`LAT/LONRECORDED`=="YES",1,0)
     
     table(NRMP_Master$N01)
     table(NRMP_Master$N02)
-    
-    ######################################
-    ###
-    ### AJD Check Cities ####
-    ###
-    ######################################
-    # You need to place a 1 in the City_Check file for your state if you would like the cities checked
-    # Reverse Geocode coordinates to cities
-    NRMP_Master$lat <- NRMP_Master$LATITUDE
-    NRMP_Master$lon <- NRMP_Master$LONGITUDE
-    
-    # if(input$checkcity==TRUE){
-    #   NRMP_Master$ChCitySelect = (City_Check[match(NRMP_Master$STATE,City_Check$State),1])$Select
-    #   NRMP_Master$ChCity <- ""
-    #   
-    #   ####Pick Section 1 or Section 2 to turn on
-    #   ###Section 1
-    #   citycheckind=intersect(intersect(which(!is.na(NRMP_Master$TOWN)),which(!is.na(NRMP_Master$LONGITUDE))),which(NRMP_Master$ChCitySelect == 1))
-    #   city_per_NRMP_rec=apply(NRMP_Master[citycheckind,],1,function(x)revgeo(x[which(names(NRMP_Master)=="lon")],x[which(names(NRMP_Master)=="lat")], provider =  'photon', API = NULL, output = 'frame', item = 'city'))
-    #   NRMP_Master[citycheckind,"ChCity"] <- toupper(as.character(sapply(city_per_NRMP_rec,function(x)x$city)))
-    #   
-    #   NRMP_Master$ChCity=ifelse(NRMP_Master$ChCity=="CITY NOT FOUND",NA,NRMP_Master$ChCity)
-    #   
-    #   ###End Section 2
-    #   
-    #   ##N03
-    #   ##Check if the town is correct
-    #   NRMP_Master$N03=ifelse(NRMP_Master$TOWN==NRMP_Master$ChCity,0,1)
-    #   NRMP_Master[which(is.na(NRMP_Master$N03)),"N03"]=1
-    #   
-    #   # In this version the NA values for N03 indicate that the Town information was not provided originally
-    #   ### End Check City ####
-    #   
-    # }
     
     
     ######################################
@@ -533,11 +472,11 @@ server <- function(input, output,session) {
     data <- data()
     
     df=data[,c("IDNUMBER","LONGITUDE","LATITUDE","N02","SPECIES","COUNTY","STATE")]
+    df=df[which(!is.na(df$LONGITUDE)),]
     loccols=c("black","red")[df$N02+1]
     
     xy <- df[,c("LONGITUDE","LATITUDE")]
-    dfsp=SpatialPointsDataFrame(coords = xy, data = df,
-                                proj4string = CRS("+proj=longlat +datum=NAD83 +no_defs"))
+    dfsp=st_as_sf(df,coords = c('LONGITUDE', 'LATITUDE'),crs = ("+proj=longlat +datum=NAD83 +no_defs"))
     
     # Create leaflet
     lngmin=min(df$LONGITUDE[df$LONGITUDE<0],na.rm = TRUE)
@@ -567,7 +506,7 @@ server <- function(input, output,session) {
                         icon=awesomeIcons(
                           library = "ion",  # the ion set of icons
                           icon = ifelse(  # conditional icon
-                            test = dfsp@data$SPECIES == "RACCOONS",
+                            test = dfsp$SPECIES == "RACCOONS",
                             yes = "ion-arrow-down-b",  # primary gets a down arrow
                             no = "ion-arrow-up-b"  # up arrows for secondary schools
                           ),
