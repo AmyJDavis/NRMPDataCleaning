@@ -114,7 +114,7 @@ ui <- dashboardPage(
       tabPanel("User Guide",icon=icon("info"),
                box(width=12,title=span("How to use this data cleaning app",style="color:green;font-size:28px"),status="success",
                    column(8,p("Welcome to the NRMP MIS data cleaning app. This app was developed to help check for errors in data entry. Historically, this data checking was done by hand by NRMP staff. By automating this task, now rabies field staff (as well as NRMP) can check for errors in their own data. ",style="font-size:130%;"),
-                          p("To start this app use the file uploader on the left panel to browse (and select) the file you would like to check for errors. The file needs to be in an Excel format (.xls or .xlsx) and must include the 94 columns from an MIS output (data dump). The column names must also match the MIS data dump. Please note, this file uploader can only handle file sizes of 30MB or less. Larger files will take longer to check than smaller files. Once your data has been checked, you can “Download data with errors.”  This will produce a csv file you can open in Excel.  The farthest right column will be the error codes. A pdf of the error codes and their descriptions can be found on the “Error Definitions-PDF” tab. You should download this pdf as a reference for understanding the errors. If you have any questions about the definition of an error code, please contact Kathy Nelson (Kathleen.M.Nelson@usda.gov).",style="font-size:130%;"), 
+                          p("To start this app use the file uploader on the left panel to browse (and select) the file you would like to check for errors. The file needs to be in an Excel format (.xls or .xlsx) or a csv (.csv) format and must include the 94 columns from an MIS output (data dump). The column names must also match the MIS data dump. Please note, this file uploader can only handle file sizes of 30MB or less. Larger files will take longer to check than smaller files. Once your data has been checked, you can “Download data with errors.”  This will produce a csv file you can open in Excel.  The farthest right column will be the error codes. A pdf of the error codes and their descriptions can be found on the “Error Definitions-PDF” tab. You should download this pdf as a reference for understanding the errors. If you have any questions about the definition of an error code, please contact Kathy Nelson (Kathleen.M.Nelson@usda.gov).",style="font-size:130%;"), 
                           p("You can be done with this app by simply uploading your data and then downloading the data with errors. However, we have provided additional tabs in this app to help you visualize and understand some of the errors in your data. Below are descriptions of the tabs and how to use them.",style="font-size:130%;")),
                    column(4,withSpinner(plotOutput(outputId = "datadone"))),
                    column(11,        
@@ -138,6 +138,7 @@ ui <- dashboardPage(
                           p("           ----	When you dump data from MIS it outputs the result with an .html extension that looks and feels like Excel (but it’s not Excel). If you see an error in this app when trying to upload that says 'Unable to open file', you should open the file in Excel and click “Save As” and select .xls or .xlsx. Then try uploading this new file to the data cleaning app. ",style="font-size:130%;"),
                           p("     •	",strong("Did the file upload but there are no data checking results? "),style="font-size:130%;"),
                           p("           ----	Ensure you have the correct column names in your uploaded file. This app works based on the column names that are dumped from MIS. If these names have been modified, some of the data checking will not work. Double check the column names if the file has uploaded fine, but no data checking is done.",style="font-size:130%;"),
+                          p("           ----	If you uploaded a csv file instead of an Excel file, the DATE column needs to be in the “month/day/four digit year” format.  ",style="font-size:130%;"),
                           p("     •	",strong("Email Kathleen.M.Nelson@usda.gov for other issues. "),style="font-size:130%;")
                    )
                )
@@ -237,14 +238,17 @@ server <- function(input, output,session) {
     #### Read in Data ####
     #This is the file dumped from MIS
     ### New option for importing the data
-    
-    NRMP_Master <- read_excel(input$ersdata$datapath)
-    if(!exists("NRMP_Master")){
-      hdat <- read_html(input$ersdata$datapath)
-      NRMP_Master <- html_node(hdat, "table") %>% html_table() %>% tibble::as_tibble()
+    if(tools::file_ext(input$ersdata$datapath)=="csv"){
+      NRMP_Master=read.csv(input$ersdata$datapath)
+      names(NRMP_Master)[which(names(NRMP_Master)=="LAT.LONRECORDED")]="LAT/LONRECORDED"
+      names(NRMP_Master)[which(names(NRMP_Master)=="PROCESSED.30DAYSAGO")]="PROCESSED<30DAYSAGO"
+      NRMP_Master$DATE2=as.POSIXct(NRMP_Master$DATE,format="%m-%d-%Y")
+    }else{
+      NRMP_Master <- read_excel(input$ersdata$datapath)
+      NRMP_Master$DATE2=as.POSIXct(NRMP_Master$DATE,"%Y-%m-%d")
     }
     
-    NRMP_Master$column=dim(NRMP_Master)[2]
+    NRMP_Master$column=dim(NRMP_Master)[2]-1
     NRMP_Master$AmyID=1:dim(NRMP_Master)[1]
     # NRMP_Master=NRMP_Master[!is.na(NRMP_Master$STATE),]
     
@@ -268,7 +272,7 @@ server <- function(input, output,session) {
     
     fips <- fips_codes
     fips$FIPS=paste(fips$state_code,fips$county_code,sep="")
-    NRMP_Master$State_on_record=toupper(fips[match(NRMP_Master$STATE,fips$state),"state_name"])
+    NRMP_Master$MIS_State=toupper(fips[match(NRMP_Master$STATE,fips$state),"state_name"])
     NRMP_Master$lat=ifelse(is.na(NRMP_Master$LATITUDE),0,NRMP_Master$LATITUDE)
     NRMP_Master$lon=ifelse(is.na(NRMP_Master$LONGITUDE),0,NRMP_Master$LONGITUDE)
     
@@ -277,15 +281,14 @@ server <- function(input, output,session) {
     
     pnts <- pnts_sf %>% mutate(
       intersection = as.integer(st_intersects(geometry, uscd)),
-      County_on_record=COUNTY,
-      County_from_GPS = gsub('[[:punct:] ]+',' ',toupper(if_else(is.na(intersection), '', uscd$NAME[intersection]))),
-      State_from_GPS = toupper(if_else(is.na(intersection), '', uscd$STATE_NAME[intersection])),
+      LATLON_State = toupper(if_else(is.na(intersection), '', uscd$STATE_NAME[intersection])),
+      MIS_County=COUNTY,
+      LATLON_County = gsub('[[:punct:] ]+',' ',toupper(if_else(is.na(intersection), '', uscd$NAME[intersection]))),
     ) 
-    
     NRMP_Master=pnts %>% st_drop_geometry()
     
-    NRMP_Master$N01=ifelse(NRMP_Master$State_on_record!=NRMP_Master$State_from_GPS&NRMP_Master$`LAT/LONRECORDED`=="YES",1,0)
-    NRMP_Master$N02=ifelse(str_remove(NRMP_Master$COUNTY," CITY")!=NRMP_Master$County_from_GPS&NRMP_Master$`LAT/LONRECORDED`=="YES",1,0)
+    NRMP_Master$N01=ifelse(NRMP_Master$MIS_State!=NRMP_Master$LATLON_State&NRMP_Master$`LAT/LONRECORDED`=="YES",1,0)
+    NRMP_Master$N02=ifelse(str_remove(NRMP_Master$COUNTY," CITY")!=NRMP_Master$LATLON_County&NRMP_Master$`LAT/LONRECORDED`=="YES",1,0)
     
     table(NRMP_Master$N01)
     table(NRMP_Master$N02)
@@ -346,7 +349,7 @@ server <- function(input, output,session) {
     ###
     # Error if MISTARGET is "INTENTIONAL and RECAPTURE is blank
     NRMP_Master$N21=ifelse((NRMP_Master$METHOD=="CAGE TRAP"|NRMP_Master$METHOD=="HANDCAUGHT/GATHERED"|NRMP_Master$METHOD=="LEG/FOOT HOLD TRAP")&NRMP_Master$MISTARGET=="INTENTIONAL"&!is.na(NRMP_Master$MISTARGET)&is.na(NRMP_Master$RECAPTURE),1,0)
-    # Error if MISTARGET is "INTENTIONAL and there is no value if it was collected within 30 days
+    # Error if MISTARGET is "INTENTIONAL" and there is no value if it was collected within 30 days
     NRMP_Master$N22=ifelse((NRMP_Master$METHOD=="CAGE TRAP"|NRMP_Master$METHOD=="HANDCAUGHT/GATHERED"|NRMP_Master$METHOD=="LEG/FOOT HOLD TRAP")&NRMP_Master$MISTARGET=="INTENTIONAL"&!is.na(NRMP_Master$MISTARGET)&is.na(NRMP_Master$`PROCESSED<30DAYSAGO`),1,0)
     
     
@@ -355,7 +358,7 @@ server <- function(input, output,session) {
     ### Individual checks
     ###
     ######################################
-    NRMP_Master$DATE2=as.POSIXct(NRMP_Master$DATE,"%Y-%m-%d")
+    
     if(is.null(NRMP_Master$DATE2)){
       NRMP_Master$DATE2=as.POSIXct(NRMP_Master$DATE,format="%m/%d/%Y")
     }
@@ -544,7 +547,7 @@ server <- function(input, output,session) {
   
   output$tablex <- renderDataTable({
     data<-data()
-    badlocs=data[which(data$N02==1),c("DATE","IDNUMBER","SPECIES","LATITUDE","LONGITUDE","State_on_record","County_on_record","State_from_GPS","County_from_GPS")]
+    badlocs=data[which(data$N02==1),c("DATE","IDNUMBER","SPECIES","LATITUDE","LONGITUDE","MIS_State","MIS_County","LATLON_State","LATLON_County")]
     badlocs
   })
   
@@ -712,7 +715,7 @@ server <- function(input, output,session) {
       paste(gsub("\\..*","",input$ersdata), "_withErrors.csv", sep="")
     },
     content = function(file) {
-      write.csv(data()[,c(1:data()$column[1],which(names(data())%in%c("State_on_record","State_from_GPS","County_on_record","County_from_GPS","Errors")))], file,row.names = FALSE,na="")
+      write.csv(data()[,c(1:data()$column[1],which(names(data())%in%c("MIS_State","LATLON_State","MIS_County","LATLON_County","Errors")))], file,row.names = FALSE,na="")
     }
   )
   session$onSessionEnded(stopApp)
