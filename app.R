@@ -139,6 +139,7 @@ ui <- dashboardPage(
                           p("     •	",strong("Did the file upload but there are no data checking results? "),style="font-size:130%;"),
                           p("           ----	Ensure you have the correct column names in your uploaded file. This app works based on the column names that are dumped from MIS. If these names have been modified, some of the data checking will not work. Double check the column names if the file has uploaded fine, but no data checking is done.",style="font-size:130%;"),
                           p("           ----	If you uploaded a csv file instead of an Excel file, the DATE column needs to be in the “month/day/four digit year” format.  ",style="font-size:130%;"),
+                          p("           ----	You may need to check the date format for all of your records as some export from MIS with an incorrect date format. In Excel sort by DATE and if any are left adjusted (usually shown at the bottom after sorting), retype in those dates and resave the file and try loading in the app again. ",style="font-size:130%;"),
                           p("     •	",strong("Email Kathleen.M.Nelson@usda.gov for other issues. "),style="font-size:130%;")
                    )
                )
@@ -642,10 +643,15 @@ server <- function(input, output,session) {
     data<-data()
     data1=data[which(data$N06==1|data$N07==1|data$N08==1|data$N09==1|data$N10==1|data$N11==1|data$N12==1|data$N13),]
     
-    fatecoltab=data.frame(table(data1$METHOD,data1$FATE))
-    names(fatecoltab)=c("Method","Fate","Freq")
-    fcts=dcast(fatecoltab,Method~Fate)
-    fcts
+    if(dim(data1)[1]==0){
+      data.table(Error="No method-fate errors")
+    }else{
+      fatecoltab=data.frame(table(data1$METHOD,data1$FATE))
+      names(fatecoltab)=c("Method","Fate","Freq")
+      fcts=dcast(fatecoltab,Method~Fate)
+      fcts
+    }
+    
   })
   
   ####
@@ -703,10 +709,15 @@ server <- function(input, output,session) {
   output$targetsps <- renderDataTable({
     data<-data()
     data1=data[which(data$N20==1,),]
-    spstab=data.frame(table(data1$SPECIES,data1$TARGETSPECIES))
-    names(spstab)=c("Species","Target_Species","Freq")
-    scts=dcast(spstab,Species~Target_Species)
-    scts
+    
+    if(dim(data1)[1]==0){
+      data.table(Error="No target species errors")
+    }else{
+      spstab=data.frame(table(data1$SPECIES,data1$TARGETSPECIES))
+      names(spstab)=c("Species","Target_Species","Freq")
+      scts=dcast(spstab,Species~Target_Species)
+      scts
+    }
   })
   
   ### Download data button information
