@@ -396,7 +396,7 @@ server <- function(input, output,session) {
     scheck=tapply(NRMP_Master$FATE,NRMP_Master$IDState,function(x)any(x[-length(x)]=="EUTHANIZED"|x[-length(x)]=="FOUND DEAD"|x[-length(x)]=="DIED UNDER CARE"))
     NRMP_Master$N25a=0
     NRMP_Master[which(NRMP_Master$IDState%in%names(scheck[scheck==TRUE])),"N25a"]=1
-    NRMP_Master$N25a=ifelse(is.na(NRMP_Master$IDNUMBER2),0,NRMP_Master$N25a)
+    NRMP_Master$N25a=ifelse(is.na(NRMP_Master$IDNUMBER),0,NRMP_Master$N25a)
     
     # Error if an individual as the same ID and captured on the same day
     NRMP_Master$N26=ifelse(NRMP_Master$diffdat==0&!is.na(NRMP_Master$IDNUMBER),1,0)
