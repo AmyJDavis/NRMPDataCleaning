@@ -31,6 +31,7 @@ library(DT)
 library(leaflet)
 library(leaflegend)
 library(readxl)
+library(xlsx)
 #library(raster)
 library(tidyverse)
 library(tigris)
@@ -105,7 +106,9 @@ ui <- dashboardPage(
     ## User inputs or from our study
     fileInput(inputId = "ersdata",label = "Select Data File",accept = c('xls','xlsx')),
     tags$h4(class="primary-subtitle", style='margin-top:8px;margin-left:15px;',"To download the data with errors, click the button below",align='left'),
-    downloadButton(outputId = "download",label =  "Download data with errors",style="color:black;font-size:18px")
+    downloadButton(outputId = "download",label =  "Download data with errors as .csv",style="color:black;font-size:18px"),
+    downloadButton(outputId = "downloadxlsx",label =  "Download data with errors as .xlsx",style="color:black;font-size:18px")
+    
   ),
   
   # Show output
@@ -114,7 +117,7 @@ ui <- dashboardPage(
       tabPanel("User Guide",icon=icon("info"),
                box(width=12,title=span("How to use this data checking app",style="color:green;font-size:28px"),status="success",
                    column(8,p("Welcome to the NRMP MIS data checking app. This app was developed to help check for errors in data entry. Historically, this data checking was done by hand by NRMP staff. By automating this task, now rabies field staff (as well as NRMP) can check for errors in their own data. ",style="font-size:130%;"),
-                          p("To start this app use the file uploader on the left panel to browse (and select) the file you would like to check for errors. The file needs to be in an Excel format (.xls or .xlsx) or a csv (.csv) format and must include the 94 columns from an MIS output (data dump). The column names must also match the MIS data dump. Please note, this file uploader can only handle file sizes of 30MB or less. Larger files will take longer to check than smaller files. Once your data has been checked, you can “Download data with errors.”  This will produce a csv file you can open in Excel.  The farthest right column will be the error codes. A pdf of the error codes and their descriptions can be found on the “Error Definitions-PDF” tab. You should download this pdf as a reference for understanding the errors. If you have any questions about the definition of an error code, please contact Kathy Nelson (Kathleen.M.Nelson@usda.gov).",style="font-size:130%;"), 
+                          p("To start this app use the file uploader on the left panel to browse (and select) the file you would like to check for errors. The file needs to be in an Excel format (.xls or .xlsx) or a csv (.csv) format and must include the 94 columns from an MIS output (data dump). The column names must also match the MIS data dump. Please note, this file uploader can only handle file sizes of 30MB or less. Larger files will take longer to check than smaller files. Once your data has been checked, you can “Download data with errors” either as a .csv or a .xlsx file.  The farthest right column will be the error codes. A pdf of the error codes and their descriptions can be found on the “Error Definitions-PDF” tab. You should download this pdf as a reference for understanding the errors. If you have any questions about the definition of an error code, please contact Kathy Nelson (Kathleen.M.Nelson@usda.gov).",style="font-size:130%;"), 
                           p("You can be done with this app by simply uploading your data and then downloading the data with errors. However, we have provided additional tabs in this app to help you visualize and understand some of the errors in your data. Below are descriptions of the tabs and how to use them.",style="font-size:130%;")),
                    column(4,withSpinner(plotOutput(outputId = "datadone"))),
                    column(11,        
@@ -400,6 +403,7 @@ server <- function(input, output,session) {
     
     # Error if an individual as the same ID and captured on the same day
     NRMP_Master$N26=ifelse(NRMP_Master$diffdat==0&!is.na(NRMP_Master$IDNUMBER),1,0)
+    
     NRMP_Master=NRMP_Master[order(NRMP_Master$AmyID),]
     NRMP_Master$N26a=ifelse(NRMP_Master$LACTATION=="YES"&NRMP_Master$SEX!="FEMALE",1,0)
     NRMP_Master$N26a[is.na(NRMP_Master$N26a)]=0
@@ -487,7 +491,7 @@ server <- function(input, output,session) {
     }
     data <- data()
     
-    df=data[data$N02==1,c("IDNUMBER","LONGITUDE","LATITUDE","N02","SPECIES","COUNTY","STATE")]
+    df=data[,c("IDNUMBER","LONGITUDE","LATITUDE","N02","SPECIES","COUNTY","STATE")]
     df=df[which(!is.na(df$LONGITUDE)),]
     loccols=c("black","red")[df$N02+1]
     
@@ -726,15 +730,28 @@ server <- function(input, output,session) {
     }
   })
   
-  ### Download data button information
+  ### Download data button information for .csv
   output$download <- downloadHandler(
     filename = function() {
       paste(gsub("\\..*","",input$ersdata), "_withErrors.csv", sep="")
     },
     content = function(file) {
       write.csv(data()[,c(1:data()$column[1],which(names(data())%in%c("MIS_State","LATLON_State","MIS_County","LATLON_County","Errors")))], file,row.names = FALSE,na="")
+      
     }
   )
+  
+  ### Download data button information for .xlsx
+  output$downloadxlsx <- downloadHandler(
+    filename = function() {
+      paste(gsub("\\..*","",input$ersdata), "_withErrors.xlsx", sep="")
+    },
+    content = function(file) {
+      xlsx::write.xlsx2(data()[,c(1:data()$column[1],which(names(data())%in%c("MIS_State","LATLON_State","MIS_County","LATLON_County","Errors")))], file, sheetName = "Sheet1",
+                        col.names = TRUE, row.names = FALSE, append = FALSE)
+    }
+  )
+  
   session$onSessionEnded(stopApp)
   
 }
