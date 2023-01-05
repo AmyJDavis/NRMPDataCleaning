@@ -6,7 +6,7 @@
 ###   
 ###
 ### Amy J Davis
-### February 16, 2021, Updated January 5, 2023
+### February 16, 2021, Updated April 19, 2022
 ###
 ########################################################################
 ########################################################################
@@ -106,7 +106,9 @@ ui <- dashboardPage(
     ## User inputs or from our study
     fileInput(inputId = "ersdata",label = "Select Data File",accept = c('xls','xlsx')),
     tags$h4(class="primary-subtitle", style='margin-top:8px;margin-left:15px;',"To download the data with errors, click the button below",align='left'),
+    tags$h4(class="primary-subtitle", style='margin-top:8px;margin-left:15px;',"For a .csv file: ",align='left'),
     downloadButton(outputId = "download",label =  "Download data with errors as .csv",style="color:black;font-size:18px"),
+    tags$h4(class="primary-subtitle", style='margin-top:8px;margin-left:15px;',"For a .xlsx file: ",align='left'),
     downloadButton(outputId = "downloadxlsx",label =  "Download data with errors as .xlsx",style="color:black;font-size:18px")
     
   ),
