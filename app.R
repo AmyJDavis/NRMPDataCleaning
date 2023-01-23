@@ -72,6 +72,12 @@ stfp <- 1:56
 stfp <- stfp[-c(2,3,7,14,15,43,52)]
 uscd=tigris::counties(state=stfp,cb = TRUE)
 
+col_types=c('date','text','text','text','text','text','logical','text','text','text','text','text','text','text','numeric','text','logical',
+            'text','numeric','numeric','text','text','text','logical','text','text','text','text','text','text','text','text','text','text',
+            'text','text','numeric','text','text','numeric','text','text','numeric','text','text','text','text','text','numeric','text','text',
+            'text','text','logical','logical','text','text','text','text','text','logical','text','text','text','text','text','text','text',
+            'logical','text','text','text','text','text','logical','logical','text','text','logical','text','text','numeric','text','text','text',
+            'text','text','text','logical','logical','logical','logical','logical','logical')
 
 # Define UI f
 ui <- dashboardPage(
@@ -119,7 +125,7 @@ ui <- dashboardPage(
       tabPanel("User Guide",icon=icon("info"),
                box(width=12,title=span("How to use this data checking app",style="color:green;font-size:28px"),status="success",
                    column(8,p("Welcome to the NRMP MIS data checking app. This app was developed to help check for errors in data entry. Historically, this data checking was done by hand by NRMP staff. By automating this task, now rabies field staff (as well as NRMP) can check for errors in their own data. ",style="font-size:130%;"),
-                          p("To start this app use the file uploader on the left panel to browse (and select) the file you would like to check for errors. The file needs to be in an Excel format (.xls or .xlsx) or a csv (.csv) format and must include the 94 columns from an MIS output (data dump). The column names must also match the MIS data dump. Please note, this file uploader can only handle file sizes of 30MB or less. Larger files will take longer to check than smaller files. Once your data has been checked, you can “Download data with errors” either as a .csv or a .xlsx file.  The farthest right column will be the error codes. A pdf of the error codes and their descriptions can be found on the “Error Definitions-PDF” tab. You should download this pdf as a reference for understanding the errors. If you have any questions about the definition of an error code, please contact Kathy Nelson (Kathleen.M.Nelson@usda.gov).",style="font-size:130%;"), 
+                          p("To start this app use the file uploader on the left panel to browse (and select) the file you would like to check for errors. The file needs to be in an Excel format (.xls or .xlsx) or a csv (.csv) format and the first 94 columns must be the output from MIS (data dump). The column names must also match the MIS data dump.Additional columns can be added to the data but they must be added after the 94 MIS columns. Please note, this file uploader can only handle file sizes of 30MB or less. Larger files will take longer to check than smaller files. Once your data has been checked, you can “Download data with errors” either as a .csv or a .xlsx file.  The farthest right column will be the error codes. A pdf of the error codes and their descriptions can be found on the “Error Definitions-PDF” tab. You should download this pdf as a reference for understanding the errors. If you have any questions about the definition of an error code, please contact Kathy Nelson (Kathleen.M.Nelson@usda.gov).",style="font-size:130%;"), 
                           p("You can be done with this app by simply uploading your data and then downloading the data with errors. However, we have provided additional tabs in this app to help you visualize and understand some of the errors in your data. Below are descriptions of the tabs and how to use them.",style="font-size:130%;")),
                    column(4,withSpinner(plotOutput(outputId = "datadone"))),
                    column(11,        
@@ -251,6 +257,13 @@ server <- function(input, output,session) {
       NRMP_Master$DATE2=as.POSIXct(NRMP_Master$DATE,format="%m-%d-%Y")
     }else{
       NRMP_Master <- read_excel(input$ersdata$datapath)
+      
+      if(dim(NRMP_Master)[2]>94){
+        col_types=c(col_types,rep("guess",dim(NRMP_Master)[2]-94))
+      }
+      
+      NRMP_Master <- read_excel(input$ersdata$datapath,col_types = col_types)
+      
       NRMP_Master$DATE2=as.POSIXct(NRMP_Master$DATE,"%Y-%m-%d")
     }
     
@@ -749,8 +762,7 @@ server <- function(input, output,session) {
       paste(gsub("\\..*","",input$ersdata), "_withErrors.xlsx", sep="")
     },
     content = function(file) {
-      xlsx::write.xlsx2(data()[,c(1:data()$column[1],which(names(data())%in%c("MIS_State","LATLON_State","MIS_County","LATLON_County","Errors")))], file, sheetName = "Sheet1",
-                        col.names = TRUE, row.names = FALSE, append = FALSE)
+      openxlsx::write.xlsx(data()[,c(1:data()$column[1],which(names(data())%in%c("MIS_State","LATLON_State","MIS_County","LATLON_County","Errors")))], file, sheetName = "Sheet1")
     }
   )
   
