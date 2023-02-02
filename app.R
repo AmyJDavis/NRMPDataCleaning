@@ -762,7 +762,9 @@ server <- function(input, output,session) {
       paste(gsub("\\..*","",input$ersdata), "_withErrors.xlsx", sep="")
     },
     content = function(file) {
-      openxlsx::write.xlsx(data()[,c(1:data()$column[1],which(names(data())%in%c("MIS_State","LATLON_State","MIS_County","LATLON_County","Errors")))], file, sheetName = "Sheet1")
+      #openxlsx::write.xlsx(data()[,c(1:data()$column[1],which(names(data())%in%c("MIS_State","LATLON_State","MIS_County","LATLON_County","Errors")))], file, sheetName = "Sheet1")
+      writexl::write_xlsx(data()[,c(1:data()$column[1],which(names(data())%in%c("MIS_State","LATLON_State","MIS_County","LATLON_County","Errors")))],file,col_names = TRUE)
+      
     }
   )
   
