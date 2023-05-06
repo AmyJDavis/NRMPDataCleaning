@@ -6,7 +6,7 @@
 ###   
 ###
 ### Amy J Davis
-### February 16, 2021, Updated April 19, 2022
+### February 16, 2021, Updated April 25, 2023
 ###
 ########################################################################
 ########################################################################
@@ -18,20 +18,13 @@
 ###  
 
 ### Libraries
-t_col <- function(color, percent = 30, name = NULL) {
-  #	  color = color name; percent = % transparency; name = an optional name for the color
-  rgb.val <- col2rgb(color) ## Get RGB values for named color
-  ## Make new color using input color as base and alpha set by transparency
-  t.col <- rgb(rgb.val[1], rgb.val[2], rgb.val[3],max = 255,alpha = (100-percent)*255/100,names = name)
-  invisible(t.col) ## Save the color
-}
 library(shiny) 
 library(shinythemes)
 library(DT)
 library(leaflet)
 library(leaflegend)
 library(readxl)
-#library(xlsx)
+# library(xlsx)
 library(raster)
 library(tidyverse)
 library(tigris)
@@ -72,12 +65,18 @@ stfp <- 1:56
 stfp <- stfp[-c(2,3,7,14,15,43,52)]
 uscd=tigris::counties(state=stfp,cb = TRUE)
 
-col_types=c('date','text','text','text','text','text','logical','text','text','text','text','text','text','text','numeric','text','logical',
-            'text','numeric','numeric','text','text','text','logical','text','text','text','text','text','text','text','text','text','text',
-            'text','text','numeric','text','text','numeric','text','text','numeric','text','text','text','text','text','numeric','text','text',
-            'text','text','logical','logical','text','text','text','text','text','logical','text','text','text','text','text','text','text',
-            'logical','text','text','text','text','text','logical','logical','text','text','logical','text','text','numeric','text','text','text',
-            'text','text','text','logical','logical','logical','logical','logical','logical')
+# col_types=c('date','text','text','text','text','text','logical','text','text','text','text','text','text','text','numeric','text','logical',
+#             'text','numeric','numeric','text','text','text','logical','text','text','text','text','text','text','text','text','text','text',
+#             'text','text','numeric','text','text','numeric','text','text','numeric','text','text','text','text','text','numeric','text','text',
+#             'text','text','logical','logical','text','text','text','text','text','logical','text','text','text','text','text','text','text',
+#             'logical','text','text','text','text','text','logical','logical','text','text','logical','text','text','numeric','text','text','text',
+#             'text','text','text','logical','logical','logical','logical','logical','logical')
+col_types=c('date','text','text','text','text','text','text','text','text','text','text','text','date','text','numeric','text','text','text',
+            'numeric','numeric','text','text','text','text','text','text','text','text','text','text','text','text','text','text','text','text',
+            'text','text','text','text','text','text','text','text','text','text','text','text','numeric','text','text','text','text','text',
+            'text','text','text','text','text','text','text','text','text','text','text','text','text','text','text','text','text','date','text',
+            'text','text','text','text','text','text','text','text','text','text','text','text','text','text','text','text','text','text','text',
+            'text','text')
 
 # Define UI f
 ui <- dashboardPage(
@@ -254,7 +253,10 @@ server <- function(input, output,session) {
       NRMP_Master=read.csv(input$ersdata$datapath)
       names(NRMP_Master)[which(names(NRMP_Master)=="LAT.LONRECORDED")]="LAT/LONRECORDED"
       names(NRMP_Master)[which(names(NRMP_Master)=="PROCESSED.30DAYSAGO")]="PROCESSED<30DAYSAGO"
-      NRMP_Master$DATE2=as.POSIXct(NRMP_Master$DATE,format="%m-%d-%Y")
+      NRMP_Master$DATE2=as.POSIXct(NRMP_Master$DATE,format="%m/%d/%Y")
+      NRMP_Master$DATELASTORV=as.POSIXct(NRMP_Master$DATELASTORV,format="%m/%d/%Y")
+      chrind=which(sapply(NRMP_Master, class) == 'character')
+      NRMP_Master[,chrind][NRMP_Master[,chrind]==""]=NA
     }else{
       NRMP_Master <- read_excel(input$ersdata$datapath)
       
@@ -263,8 +265,7 @@ server <- function(input, output,session) {
       }
       
       NRMP_Master <- read_excel(input$ersdata$datapath,col_types = col_types)
-      
-      NRMP_Master$DATE2=as.POSIXct(NRMP_Master$DATE,"%Y-%m-%d")
+      NRMP_Master$DATE2=as.POSIXct(NRMP_Master$DATE,format="%Y-%m-%d")
     }
     
     NRMP_Master$column=dim(NRMP_Master)[2]-1
@@ -272,8 +273,8 @@ server <- function(input, output,session) {
     # NRMP_Master=NRMP_Master[!is.na(NRMP_Master$STATE),]
     
     # Fix Data Before Checks
-    NRMP_Master$DATE <- as.character(NRMP_Master$DATE)
-    NRMP_Master$DATELASTORV <- as.character(NRMP_Master$DATELASTORV)
+    # NRMP_Master$DATE <- as.character(NRMP_Master$DATE)
+    # NRMP_Master$DATELASTORV <- as.character(NRMP_Master$DATELASTORV)
     NRMP_Master$RECAPTURE <- as.character(NRMP_Master$RECAPTURE)
     # Make columns for checks 
     Fixdf=data.frame(matrix(0,length(NRMP_Master$DATE),dim(Fix_Comments)[1]))
@@ -332,7 +333,7 @@ server <- function(input, output,session) {
     ###
     ### ORV issues
     #
-    NRMP_Master$N15=ifelse(NRMP_Master$ORVNAIVE=="YES"&!is.na(NRMP_Master$DATELASTORV),1,0)
+    NRMP_Master$N15=ifelse((NRMP_Master$ORVNAIVE=="YES"|NRMP_Master$ORVNAIVE=="")&!is.na(NRMP_Master$DATELASTORV),1,0)
     # Error if ACTIVITY and ORVNAIVE don't match
     NRMP_Master$N16=ifelse(NRMP_Master$ACTIVITY=="TRAPPING (ORV NAIVE)"&NRMP_Master$ORVNAIVE!="YES",1,0)
     NRMP_Master$N16=ifelse(NRMP_Master$ACTIVITY=="TRAPPING (ORV POST-BAIT)"&NRMP_Master$ORVNAIVE!="NO",1,NRMP_Master$N16)
@@ -342,9 +343,9 @@ server <- function(input, output,session) {
     NRMP_Master$N17[is.na(NRMP_Master$N17)]=0
     
     # Error for ORVNAIVE and bait type match
-    NRMP_Master$N18=ifelse(NRMP_Master$ORVNAIVE=="YES"&NRMP_Master$ORVBAITTYPE!="NONE (NAIVE)",1,0)
-    NRMP_Master$N18=ifelse(NRMP_Master$ORVNAIVE=="NO"&(is.na(NRMP_Master$ORVBAITTYPE)|NRMP_Master$ORVBAITTYPE=="NONE (NAIVE)"),1,NRMP_Master$N18)
-    NRMP_Master$N18=ifelse((!is.na(NRMP_Master$ORVBAITTYPE)|NRMP_Master$ORVBAITTYPE!="NONE (NAIVE)")&is.na(NRMP_Master$ORVNAIVE),1,NRMP_Master$N18)
+    NRMP_Master$N18=ifelse((NRMP_Master$ORVNAIVE=="YES"|NRMP_Master$ORVNAIVE=="")&NRMP_Master$ORVBAITTYPE!="NONE (NAIVE)",1,0)
+    NRMP_Master$N18=ifelse(NRMP_Master$ORVNAIVE=="NO"&(is.na(NRMP_Master$ORVBAITTYPE)|NRMP_Master$ORVBAITTYPE=="NONE (NAIVE)"|NRMP_Master$ORVBAITTYPE==""),1,NRMP_Master$N18)
+    NRMP_Master$N18=ifelse((!is.na(NRMP_Master$ORVBAITTYPE)|NRMP_Master$ORVBAITTYPE!="NONE (NAIVE)"|NRMP_Master$ORVBAITTYPE!="")&is.na(NRMP_Master$ORVNAIVE),1,NRMP_Master$N18)
     NRMP_Master$N18[is.na(NRMP_Master$N18)]=0
     
     # Error for ORVNAIVE is no DATELASTORV must have a value
@@ -369,7 +370,7 @@ server <- function(input, output,session) {
     # Error if MISTARGET is "INTENTIONAL and RECAPTURE is blank
     NRMP_Master$N21=ifelse((NRMP_Master$METHOD=="CAGE TRAP"|NRMP_Master$METHOD=="HANDCAUGHT/GATHERED"|NRMP_Master$METHOD=="LEG/FOOT HOLD TRAP")&NRMP_Master$MISTARGET=="INTENTIONAL"&!is.na(NRMP_Master$MISTARGET)&is.na(NRMP_Master$RECAPTURE),1,0)
     # Error if MISTARGET is "INTENTIONAL" and there is no value if it was collected within 30 days
-    NRMP_Master$N22=ifelse((NRMP_Master$METHOD=="CAGE TRAP"|NRMP_Master$METHOD=="HANDCAUGHT/GATHERED"|NRMP_Master$METHOD=="LEG/FOOT HOLD TRAP")&NRMP_Master$MISTARGET=="INTENTIONAL"&!is.na(NRMP_Master$MISTARGET)&is.na(NRMP_Master$`PROCESSED<30DAYSAGO`),1,0)
+    NRMP_Master$N22=ifelse((NRMP_Master$METHOD=="CAGE TRAP"|NRMP_Master$METHOD=="HANDCAUGHT/GATHERED"|NRMP_Master$METHOD=="LEG/FOOT HOLD TRAP")&NRMP_Master$MISTARGET=="INTENTIONAL"&!is.na(NRMP_Master$MISTARGET)&(is.na(NRMP_Master$`PROCESSED<30DAYSAGO`)|NRMP_Master$`PROCESSED<30DAYSAGO`==""),1,0)
     
     
     ######################################
@@ -377,51 +378,49 @@ server <- function(input, output,session) {
     ### Individual checks
     ###
     ######################################
-    
-    if(is.null(NRMP_Master$DATE2)){
-      NRMP_Master$DATE2=as.POSIXct(NRMP_Master$DATE,format="%m/%d/%Y")
-    }
     NRMP_Master$DaysSinceCapture=as.numeric(difftime(Sys.Date(),NRMP_Master$DATE2,units="days"))
-    NRMP_Master=NRMP_Master[order(NRMP_Master$STATE,NRMP_Master$IDNUMBER,NRMP_Master$DATE),]
+    NRMP_Master=NRMP_Master[order(NRMP_Master$STATE,NRMP_Master$IDNUMBER,NRMP_Master$DATE2),]
     NRMP_Master$WasCaught=0
     NRMP_Master$diffdat=c(0,as.numeric(diff(NRMP_Master$DATE2,units="days"),units="days"))
     
     NRMP_Master$IDState=paste(NRMP_Master$IDNUMBER,NRMP_Master$STATE,sep=".")
+    NRMP_Master$IDState=ifelse(NRMP_Master$IDNUMBER==""|is.na(NRMP_Master$IDNUMBER),NA,NRMP_Master$IDState)
     
     # Indicator for first of ID series
     NRMP_Master$t=sapply(1:nrow(NRMP_Master)-1,function(x)identical(NRMP_Master$IDState[x],NRMP_Master$IDState[x+1]))
+    NRMP_Master$t=ifelse(is.na(NRMP_Master$IDNUMBER)|NRMP_Master$IDNUMBER=="",FALSE,NRMP_Master$t)
     NRMP_Master$diffdat=ifelse(NRMP_Master$t==FALSE,999,NRMP_Master$diffdat)
     
     # Error for the if the animal was caught within the last 30 days but PROCESSED<30DAYSAGE is "NO"
-    NRMP_Master$N23=ifelse(NRMP_Master$diffdat<30&NRMP_Master$`PROCESSED<30DAYSAGO`=="NO"&!is.na(NRMP_Master$`PROCESSED<30DAYSAGO`),1,0)
-    NRMP_Master$N23=ifelse(is.na(NRMP_Master$IDNUMBER),0,NRMP_Master$N23)
+    NRMP_Master$N23=ifelse(NRMP_Master$diffdat<30&NRMP_Master$`PROCESSED<30DAYSAGO`=="NO"&(!is.na(NRMP_Master$`PROCESSED<30DAYSAGO`)|NRMP_Master$`PROCESSED<30DAYSAGO`==""),1,0)
+    NRMP_Master$N23=ifelse(is.na(NRMP_Master$IDNUMBER)|NRMP_Master$IDNUMBER=="",0,NRMP_Master$N23)
+    NRMP_Master$N23[is.na(NRMP_Master$N23)]=0
     
     
     # Making sure animals don't change species among captures
     spcheck=tapply(NRMP_Master$SPECIES,NRMP_Master$IDState,function(x)length(unique(x))>1)
     NRMP_Master$N24=0
-    NRMP_Master[which(NRMP_Master$IDState%in%names(spcheck[spcheck==TRUE])&!is.na(NRMP_Master$IDNUMBER)),"N24"]=1
-    NRMP_Master$N24=ifelse(is.na(NRMP_Master$IDNUMBER),0,NRMP_Master$N24)
+    NRMP_Master[which(NRMP_Master$IDState%in%names(spcheck[spcheck==TRUE])&(!is.na(NRMP_Master$IDNUMBER)|NRMP_Master$IDNUMBER=="")),"N24"]=1
+    NRMP_Master$N24=ifelse(is.na(NRMP_Master$IDNUMBER)|NRMP_Master$IDNUMBER=="",0,NRMP_Master$N24)
     
     # Error if an individual is called both a male and female at some point during its capture
     scheck=tapply(NRMP_Master$SEX,NRMP_Master$IDState,function(x)any(x%in%c("MALE"))&any(x%in%c("FEMALE")))
     NRMP_Master$N25=0
     NRMP_Master[which(NRMP_Master$IDState%in%names(scheck[scheck==TRUE])),"N25"]=1
-    NRMP_Master$N25=ifelse(is.na(NRMP_Master$IDNUMBER),0,NRMP_Master$N25)
+    NRMP_Master$N25=ifelse(is.na(NRMP_Master$IDNUMBER)|NRMP_Master$IDNUMBER=="",0,NRMP_Master$N25)
     
     # Trying to check for animals that died and came back to life
     NRMP_Master=NRMP_Master[order(NRMP_Master$IDState,NRMP_Master$DATE2),]
     scheck=tapply(NRMP_Master$FATE,NRMP_Master$IDState,function(x)any(x[-length(x)]=="EUTHANIZED"|x[-length(x)]=="FOUND DEAD"|x[-length(x)]=="DIED UNDER CARE"))
     NRMP_Master$N25a=0
     NRMP_Master[which(NRMP_Master$IDState%in%names(scheck[scheck==TRUE])),"N25a"]=1
-    NRMP_Master$N25a=ifelse(is.na(NRMP_Master$IDNUMBER),0,NRMP_Master$N25a)
+    NRMP_Master$N25a=ifelse(is.na(NRMP_Master$IDNUMBER)|NRMP_Master$IDNUMBER=="",0,NRMP_Master$N25a)
     
     # Error if an individual as the same ID and captured on the same day
-    NRMP_Master$N26=ifelse(NRMP_Master$diffdat==0&!is.na(NRMP_Master$IDNUMBER),1,0)
-    
+    NRMP_Master$N26=ifelse(NRMP_Master$diffdat==0&(!is.na(NRMP_Master$IDNUMBER)|NRMP_Master$IDNUMBER!=""),1,0)
     NRMP_Master=NRMP_Master[order(NRMP_Master$AmyID),]
     NRMP_Master$N26a=ifelse(NRMP_Master$LACTATION=="YES"&NRMP_Master$SEX!="FEMALE",1,0)
-    NRMP_Master$N26a[is.na(NRMP_Master$N26a)]=0
+    NRMP_Master$N26a[is.na(NRMP_Master$N26a)|NRMP_Master$IDNUMBER==""]=0
     
     ###
     ### More individual checks
@@ -488,7 +487,7 @@ server <- function(input, output,session) {
     NRMP_Master[,which(names(NRMP_Master)%in%names(Fixdf))]=errordf
     
     #### Creating a columne for the errors
-    hm=apply(errordf,1,function(x){which(x==1)})
+    hm=(apply(errordf,1,function(x){which(x==1)}))
     if(is.list(hm)){
       hm2=lapply(hm,names)
       NRMP_Master$Errors=do.call('rbind',lapply(hm2,paste,collapse=";"))
@@ -497,6 +496,8 @@ server <- function(input, output,session) {
       NRMP_Master$Errors=paste(rownames(hm),collapse=";")
       
     }
+    
+    
     
     NRMP_Master
     
@@ -768,7 +769,7 @@ server <- function(input, output,session) {
       paste(gsub("\\..*","",input$ersdata), "_withErrors.xlsx", sep="")
     },
     content = function(file) {
-      #openxlsx::write.xlsx(data()[,c(1:data()$column[1],which(names(data())%in%c("MIS_State","LATLON_State","MIS_County","LATLON_County","Errors")))], file, sheetName = "Sheet1")
+      # openxlsx::write.xlsx(data()[,c(1:data()$column[1],which(names(data())%in%c("MIS_State","LATLON_State","MIS_County","LATLON_County","Errors")))], file, sheetName = "Sheet1")
       writexl::write_xlsx(data()[,c(1:data()$column[1],which(names(data())%in%c("MIS_State","LATLON_State","MIS_County","LATLON_County","Errors")))],file,col_names = TRUE)
       
     }
