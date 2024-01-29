@@ -518,9 +518,10 @@ server <- function(input, output,session) {
     }
     data <- data()
     
-    df=data[,c("IDNUMBER","LONGITUDE","LATITUDE","N02","SPECIES","COUNTY","STATE")]
+    df=data[,c("IDNUMBER","LONGITUDE","LATITUDE","N01","N02","SPECIES","COUNTY","STATE")]
     df=df[which(!is.na(df$LONGITUDE)),]
-    loccols=c("black","red")[df$N02+1]
+    df=df[which(df$N02==1|df$N01==1),]
+    loccols=c("red","purple")[df$N01+1]
     
     xy <- df[,c("LONGITUDE","LATITUDE")]
     dfsp=st_as_sf(df,coords = c('LONGITUDE', 'LATITUDE'),crs = ("+proj=longlat +datum=NAD83 +no_defs"))
@@ -532,13 +533,13 @@ server <- function(input, output,session) {
     latmax=max(df$LATITUDE[df$LATITUDE>0],na.rm = TRUE)
     
     iconSet <- awesomeIconList(
-      Yes = makeAwesomeIcon(
+      State = makeAwesomeIcon(
         icon = 'ion-arrow-up-b',
         library = 'ion',
         iconColor = 'white',
-        markerColor = 'black'
+        markerColor = 'purple'
       ),
-      No = makeAwesomeIcon(
+      County = makeAwesomeIcon(
         icon = 'ion-arrow-down-b',
         library = 'ion',
         iconColor = 'white',
@@ -565,7 +566,7 @@ server <- function(input, output,session) {
                            marker = TRUE,
                            title = htmltools::tags$div(
                              style = 'font-size: 20px;',
-                             'County-location match-up'),
+                             'Location Error'),
                            labelStyle = 'font-size: 16px;',
                            position = 'topleft',
                            group = 'Vertical Legend')
@@ -594,7 +595,7 @@ server <- function(input, output,session) {
     state.err=sum(data$N01,na.rm = TRUE)
     valueBox(
       state.err, "Number of records with GPS-state mismatches", icon = icon("exclamation-triangle"),
-      color = "orange"
+      color = "purple"
     )
   })
   
@@ -603,7 +604,7 @@ server <- function(input, output,session) {
     cty.err=sum(data$N02,na.rm = TRUE)
     valueBox(
       cty.err, "Number of records with GPS-county mismatches", icon = icon("exclamation-triangle"),
-      color = "green"
+      color = "red"
     )
   })
   
