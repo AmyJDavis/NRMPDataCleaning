@@ -503,7 +503,7 @@ server <- function(input, output,session) {
     }
     
     
-    
+    NRMP_Master$DATE=as.Date(NRMP_Master$DATE)
     NRMP_Master
     
   })
