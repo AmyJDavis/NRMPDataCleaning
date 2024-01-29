@@ -504,6 +504,9 @@ server <- function(input, output,session) {
     
     
     NRMP_Master$DATE=as.Date(NRMP_Master$DATE)
+    NRMP_Master$DATELASTORV=as.Date(NRMP_Master$DATELASTORV)
+    NRMP_Master$RABIESBRAINTESTDATE=as.Date(NRMP_Master$RABIESBRAINTESTDATE)
+    
     NRMP_Master
     
   })
@@ -521,7 +524,7 @@ server <- function(input, output,session) {
     df=data[,c("IDNUMBER","LONGITUDE","LATITUDE","N01","N02","SPECIES","COUNTY","STATE")]
     df=df[which(!is.na(df$LONGITUDE)),]
     df=df[which(df$N02==1|df$N01==1),]
-    loccols=c("red","purple")[df$N01+1]
+    loccols=c("red","green")[df$N01+1]
     
     xy <- df[,c("LONGITUDE","LATITUDE")]
     dfsp=st_as_sf(df,coords = c('LONGITUDE', 'LATITUDE'),crs = ("+proj=longlat +datum=NAD83 +no_defs"))
@@ -537,7 +540,7 @@ server <- function(input, output,session) {
         icon = 'ion-arrow-up-b',
         library = 'ion',
         iconColor = 'white',
-        markerColor = 'purple'
+        markerColor = 'green'
       ),
       County = makeAwesomeIcon(
         icon = 'ion-arrow-down-b',
@@ -595,7 +598,7 @@ server <- function(input, output,session) {
     state.err=sum(data$N01,na.rm = TRUE)
     valueBox(
       state.err, "Number of records with GPS-state mismatches", icon = icon("exclamation-triangle"),
-      color = "purple"
+      color = "green"
     )
   })
   
