@@ -449,6 +449,7 @@ server <- function(input, output,session) {
     
     # Error if RABIESVNA_IUML is "NOT RECORDED" after a year and a BLOODSAMPLE is "YES"
     NRMP_Master$N31=ifelse(NRMP_Master$BLOODSAMPLE=="YES"&!is.na(NRMP_Master$BLOODSAMPLE)&NRMP_Master$DaysSinceCapture>366,ifelse(is.na(NRMP_Master$RABIESVNA_IUML),1,0),0)
+    NRMP_Master$N31=ifelse(NRMP_Master$RABIESVNAINTERPRET=="NONE",0,NRMP_Master$N31)
     
     # Error if age is not filled in after a year and a sample was collected
     NRMP_Master$N32=ifelse((NRMP_Master$PM1SAMPLE=="YES"|NRMP_Master$PM2SAMPLE=="YES"|NRMP_Master$K9SAMPLE=="YES"|NRMP_Master$JAWSAMPLE=="YES")&NRMP_Master$DaysSinceCapture>366&(is.na(NRMP_Master$AGERECORDED)|is.na(NRMP_Master$TTCC)),1,0)
