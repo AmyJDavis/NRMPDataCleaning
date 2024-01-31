@@ -531,10 +531,10 @@ server <- function(input, output,session) {
     dfsp=st_as_sf(df,coords = c('LONGITUDE', 'LATITUDE'),crs = ("+proj=longlat +datum=NAD83 +no_defs"))
     
     # Create leaflet
-    lngmin=min(df$LONGITUDE[df$LONGITUDE<0],na.rm = TRUE)
-    lngmax=max(df$LONGITUDE[df$LONGITUDE<0],na.rm = TRUE)
-    latmin=min(df$LATITUDE[df$LATITUDE>0],na.rm = TRUE)
-    latmax=max(df$LATITUDE[df$LATITUDE>0],na.rm = TRUE)
+    lngmin=min(df$LONGITUDE[df$LONGITUDE<0],na.rm = TRUE)-0.01
+    lngmax=max(df$LONGITUDE[df$LONGITUDE<0],na.rm = TRUE)+0.01
+    latmin=min(df$LATITUDE[df$LATITUDE>0],na.rm = TRUE)-0.01
+    latmax=max(df$LATITUDE[df$LATITUDE>0],na.rm = TRUE)+0.01
     
     iconSet <- awesomeIconList(
       State = makeAwesomeIcon(
