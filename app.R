@@ -298,6 +298,7 @@ server <- function(input, output,session) {
     ## Specific fix for DeKalb county Alabama and Dona Ana county New Mexico
     NRMP_Master$COUNTY[NRMP_Master$COUNTY=="DE KALB"]="DEKALB"
     NRMP_Master$COUNTY[NRMP_Master$COUNTY=="DONA ANA"]="DOÑA ANA"
+    NRMP_Master$COUNTY[NRMP_Master$COUNTY=="LA SALLE"&NRMP_Master$STATE=="LA"]="LASALLE"
     
     # To get county polygon data frame information
     pnts_sf <- st_as_sf(NRMP_Master, coords = c('lon', 'lat'), crs = st_crs(uscd))
