@@ -506,7 +506,7 @@ server <- function(input, output,session) {
     
     NRMP_Master$DATE=as.Date(NRMP_Master$DATE)
     NRMP_Master$DATELASTORV=as.Date(NRMP_Master$DATELASTORV)
-    NRMP_Master$RABIESBRAINTESTDATE=as.Date(NRMP_Master$RABIESBRAINTESTDATE)
+    #NRMP_Master$RABIESBRAINTESTDATE=as.Date(NRMP_Master$RABIESBRAINTESTDATE)
     
     NRMP_Master
     
