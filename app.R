@@ -6,7 +6,7 @@
 ###   
 ###
 ### Amy J Davis
-### February 16, 2021, Updated April 25, 2023
+### February 16, 2021, Updated January 31, 2024
 ###
 ########################################################################
 ########################################################################
@@ -60,9 +60,20 @@ options(shiny.maxRequestSize = 30*1024^2)
 Fix_Comments <- read_excel("www/DataCheckingErrorCodes.xlsx")
 
 ### County information
-stfp <- 1:56
-stfp <- stfp[-c(2,3,7,14,15,43,52)]
-uscd=tigris::counties(state=stfp,cb = TRUE)
+stvec=c(1:2,4:6,8:13,16:42,44:51,53:56)
+stvec=ifelse(stvec<10,paste0("0",stvec),stvec)
+
+stdf=data.frame(STATEID=stvec,
+                STUSPS=c("AL","AK","AZ","AR","CA","CO","CT","DE","DC","FL","GA","ID","IL","IN","IA","KS","KY",
+                         "LA","ME","MD","MA","MI","MN","MS","MO","MT","NE","NV","NH","NJ","NM","NY","NC","ND",
+                         "OH","OK","OR","PA","RI","SC","SD","TN","TX","UT","VT","VA","WA","WV","WI","WY"))
+stdf$STATE_NAME=state.name[match(stdf$STUSPS,state.abb)]
+stdf$STATE_NAME[stdf$STUSPS=="DC"]="District of Columbia"
+
+uscd=sf::read_sf("www/cb_2018_us_county_5m.shp")
+uscd=uscd[uscd$STATEFP%in%stvec,]
+uscd$STUSPS=stdf[match(uscd$STATEFP,stdf$STATEID),"STUSPS"]
+uscd$STATE_NAME=stdf[match(uscd$STATEFP,stdf$STATEID),"STATE_NAME"]
 
 # col_types=c('date','text','text','text','text','text','logical','text','text','text','text','text','text','text','numeric','text','logical',
 #             'text','numeric','numeric','text','text','text','logical','text','text','text','text','text','text','text','text','text','text',
@@ -123,7 +134,7 @@ ui <- dashboardPage(
       tabPanel("User Guide",icon=icon("info"),
                box(width=12,title=span("How to use this data checking app",style="color:green;font-size:28px"),status="success",
                    column(8,p("Welcome to the NRMP MIS data checking app. This app was developed to help check for errors in data entry. Historically, this data checking was done by hand by NRMP staff. By automating this task, now rabies field staff (as well as NRMP) can check for errors in their own data. ",style="font-size:130%;"),
-                          p("To start this app use the file uploader on the left panel to browse (and select) the file you would like to check for errors. The file needs to be in an Excel format (.xls or .xlsx) or a csv (.csv) format and the first 94 columns must be the output from MIS (data dump). The column names must also match the MIS data dump.Additional columns can be added to the data but they must be added after the 94 MIS columns. Please note, this file uploader can only handle file sizes of 30MB or less. Larger files will take longer to check than smaller files. Once your data has been checked, you can “Download data with errors” either as a .csv or a .xlsx file.  The farthest right column will be the error codes. A pdf of the error codes and their descriptions can be found on the “Error Definitions-PDF” tab. You should download this pdf as a reference for understanding the errors. If you have any questions about the definition of an error code, please contact Kathy Nelson (Kathleen.M.Nelson@usda.gov).",style="font-size:130%;"), 
+                          p("To start this app use the file uploader on the left panel to browse (and select) the file you would like to check for errors. The file needs to be in an Excel format (.xls or .xlsx) or a csv (.csv) format and the first 94 columns must be the output from MIS (data dump). The column names must also match the MIS data dump.Additional columns can be added to the data but they must be added after the 94 MIS columns. Please note, this file uploader can only handle file sizes of 30MB or less. Larger files will take longer to check than smaller files. Once your data have been checked, you can “Download data with errors” either as a .csv or a .xlsx file.  The farthest right column will be the error codes. A pdf of the error codes and their descriptions can be found on the “Error Definitions-PDF” tab. You should download this pdf as a reference for understanding the errors. If you have any questions about the definition of an error code, please contact Kathy Nelson (Kathleen.M.Nelson@usda.gov).",style="font-size:130%;"), 
                           p("You can be done with this app by simply uploading your data and then downloading the data with errors. However, we have provided additional tabs in this app to help you visualize and understand some of the errors in your data. Below are descriptions of the tabs and how to use them.",style="font-size:130%;")),
                    column(4,withSpinner(plotOutput(outputId = "datadone"))),
                    column(11,        
@@ -450,6 +461,7 @@ server <- function(input, output,session) {
     
     # Error if RABIESVNAINTERPRET is NA after a year and a BLOODSAMPLE is "YES"
     NRMP_Master$N31=ifelse(NRMP_Master$BLOODSAMPLE=="YES"&!is.na(NRMP_Master$BLOODSAMPLE)&NRMP_Master$DaysSinceCapture>365,ifelse(is.na(NRMP_Master$RABIESVNAINTERPRET),1,0),0)
+    
     
     # Error if age is not filled in after a year and a sample was collected
     NRMP_Master$N32=ifelse((NRMP_Master$PM1SAMPLE=="YES"|NRMP_Master$PM2SAMPLE=="YES"|NRMP_Master$K9SAMPLE=="YES"|NRMP_Master$JAWSAMPLE=="YES")&NRMP_Master$DaysSinceCapture>366&(is.na(NRMP_Master$AGERECORDED)|is.na(NRMP_Master$TTCC)),1,0)
